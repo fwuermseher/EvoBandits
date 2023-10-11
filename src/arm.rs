@@ -15,7 +15,7 @@ impl Arm {
         }
     }
 
-    fn pull(&mut self) -> f64 {
+    pub(crate) fn pull(&mut self) -> f64 {
         let g = (self.arm_fn)(self.action_vector.clone());
 
         self.reward += g;

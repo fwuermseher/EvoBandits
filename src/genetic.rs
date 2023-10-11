@@ -22,6 +22,10 @@ impl GeneticAlgorithm {
         return self.population_size;
     }
 
+    pub(crate) fn get_individuals(&mut self) ->  &mut Vec<Arm> {
+        return &mut self.individuals;
+    }
+
     pub(crate) fn new(
         opti_function: fn(Vec<i32>) -> f64,
         population_size: usize,
