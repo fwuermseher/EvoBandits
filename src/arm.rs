@@ -1,12 +1,12 @@
-struct Arm {
+pub(crate) struct Arm {
     action_vector: Vec<i32>,
     reward: f64,
     num_pulls: i32,
-    arm_fn: fn(Vec<i32>) -> f64,
+    pub(crate) arm_fn: fn(Vec<i32>) -> f64,
 }
 
 impl Arm {
-    fn new(arm_fn: fn(Vec<i32>) -> f64, action_vector: Vec<i32>) -> Arm {
+    pub(crate) fn new(arm_fn: fn(Vec<i32>) -> f64, action_vector: Vec<i32>) -> Arm {
         Arm {
             reward: 0.0,
             num_pulls: 0,
@@ -36,4 +36,23 @@ impl Arm {
         return (self.arm_fn)(self.action_vector.clone());
     }
 
+    pub(crate) fn get_action_vector(&self) -> Vec<i32> {
+        return self.action_vector.clone();
+    }
+
+    pub(crate) fn get_mean_reward(&self) -> f64 {
+        return self.reward / self.num_pulls as f64;
+    }
+
+}
+
+impl Clone for Arm {
+    fn clone(&self) -> Self {
+        Self {
+            action_vector: self.action_vector.clone(),
+            reward: self.reward,
+            num_pulls: self.num_pulls,
+            arm_fn: self.arm_fn,
+        }
+    }
 }
