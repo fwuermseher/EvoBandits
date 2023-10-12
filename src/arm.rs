@@ -56,3 +56,20 @@ impl Clone for Arm {
         }
     }
 }
+
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
+
+impl PartialEq for Arm {
+    fn eq(&self, other: &Self) -> bool {
+        self.action_vector == other.action_vector
+    }
+}
+
+impl Eq for Arm {}
+
+impl Hash for Arm {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.action_vector.hash(state);
+    }
+}

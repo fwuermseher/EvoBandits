@@ -181,4 +181,52 @@ impl Gmab {
 
         best_arm_index
     }
+
+    fn sample_and_update(&mut self, arm_index: i32, mut individual: Arm) {
+        if arm_index >= 0 {
+            self.delete_sample_average_tree_node(&individual, arm_index);
+            self.arm_memory[arm_index as usize].pull();
+            self.genetic_algorithm.update_simulations_used(1);
+            self.sample_average_tree.insert(FloatKey(self.arm_memory[arm_index as usize].get_mean_reward()), arm_index);
+        } else {
+            individual.pull();
+            self.genetic_algorithm.update_simulations_used(1);
+            self.arm_memory.push(individual.clone());
+            self.lookup_tabel.insert(individual.get_action_vector(), self.arm_memory.len() as i32 - 1);
+            self.sample_average_tree.insert(FloatKey(individual.get_mean_reward()), self.arm_memory.len() as i32 - 1);
+        }
+    }
+
+    fn optimize(&mut self) -> Vec<i32> {
+
+        loop {
+            let crossover_pop = self.genetic_algorithm.crossover();
+
+            // mutate automatically removes duplicates
+            let mutated_pop = self.genetic_algorithm.mutate(crossover_pop);
+
+
+            for individual_index in 0..mutated_pop.len() {
+
+                let arm_index: i32 = self.lookup_tabel.get(&mutated_pop[individual_index].get_action_vector()).unwrap().clone();
+                self.sample_and_update(arm_index, mutated_pop[individual_index].clone());
+                if self.genetic_algorithm.budget_reached() {
+                    return self.arm_memory[self.find_best_ucb() as usize].get_action_vector();
+                }
+            }
+
+            let individuals = self.genetic_algorithm.get_individuals().clone();
+
+            for individual in individuals {
+                let arm_index: i32 = self.lookup_tabel.get(&individual.get_action_vector()).unwrap().clone();
+                self.sample_and_update(arm_index, individual.clone());
+                if self.genetic_algorithm.budget_reached() {
+                    return self.arm_memory[self.find_best_ucb() as usize].get_action_vector();
+                }
+            }
+
+
+        }
+
+    }
 }

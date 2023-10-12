@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use crate::arm::Arm;
 use rand_distr::{Normal, Distribution};
 use rand::Rng;
@@ -28,6 +29,14 @@ impl GeneticAlgorithm {
 
     pub(crate) fn get_simulations_used(&self) -> i32 {
         return self.simulations_used;
+    }
+
+    pub(crate) fn update_simulations_used(&mut self, number_of_new_simulations: i32) {
+        self.simulations_used += number_of_new_simulations;
+    }
+
+    pub(crate) fn budget_reached(&self) -> bool {
+        return self.simulations_used >= self.max_simulations;
     }
 
     pub(crate) fn new(
@@ -85,7 +94,7 @@ impl GeneticAlgorithm {
         }
     }
 
-    fn crossover(&self) -> Vec<Arm> {
+    pub(crate) fn crossover(&self) -> Vec<Arm> {
         let mut crossover_pop: Vec<Arm> = Vec::new();
         let m = self.get_population_size();
 
@@ -130,10 +139,11 @@ impl GeneticAlgorithm {
         crossover_pop
     }
 
-    fn mutate(&self) -> Vec<Arm> {
+    pub(crate) fn mutate(&self, population: Vec<Arm>) -> Vec<Arm> {
         let mut mutated_population: Vec<Arm> = Vec::new();
+        let mut seen = HashSet::new();
 
-        for individual in &self.individuals {
+        for individual in &population {
             let mut new_action_vector = individual.get_action_vector().clone();
             for i in 0..self.dimension {
                 if rand::random::<f64>() < self.mutation_rate {
@@ -147,7 +157,11 @@ impl GeneticAlgorithm {
                 }
             }
             let new_individual = Arm::new(individual.arm_fn, new_action_vector);  // Assuming you have a constructor like this
-            mutated_population.push(new_individual);
+            // Only insert new_individual into mutated_population if it hasn't been seen yet
+            if seen.insert(new_individual.clone()) {
+                mutated_population.push(new_individual);
+            }
+
         }
 
         mutated_population
