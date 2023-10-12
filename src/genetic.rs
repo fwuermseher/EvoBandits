@@ -26,6 +26,10 @@ impl GeneticAlgorithm {
         return &mut self.individuals;
     }
 
+    pub(crate) fn get_simulations_used(&self) -> i32 {
+        return self.simulations_used;
+    }
+
     pub(crate) fn new(
         opti_function: fn(Vec<i32>) -> f64,
         population_size: usize,

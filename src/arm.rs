@@ -28,7 +28,7 @@ impl Arm {
         return self.reward;
     }
 
-    fn get_num_pulls(&self) -> i32 {
+    pub(crate) fn get_num_pulls(&self) -> i32 {
         return self.num_pulls;
     }
 

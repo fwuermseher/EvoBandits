@@ -21,8 +21,10 @@ mod tests {
     }
 }
 
+use std::cmp::max;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
+use rand_distr::num_traits::real::Real;
 use multimap::MultiMap;
 use arm::Arm;
 use genetic::GeneticAlgorithm;
@@ -122,8 +124,61 @@ impl Gmab {
         }
     }
 
+    fn max_number_pulls(&self) -> i32 {
+        let mut max_number_pulls = 0;
+        for arm in &self.arm_memory {
+            if arm.get_num_pulls() > max_number_pulls {
+                max_number_pulls = arm.get_num_pulls();
+            }
+        }
+        max_number_pulls
+    }
+
     fn find_best_ucb(&self) -> i32 {
         let arm_index_ucb_norm_min: i32 = *self.sample_average_tree.iter().next().unwrap().1;
-        arm_index_ucb_norm_min
+        let ucb_norm_min: f64 = self.arm_memory[arm_index_ucb_norm_min as usize].get_mean_reward();
+
+        let max_number_pulls = self.max_number_pulls();
+
+        let mut ucb_norm_max: f64 = ucb_norm_min;
+
+        for (ucb_norm, arm_index) in self.sample_average_tree.iter() {
+            ucb_norm_max = f64::max(ucb_norm_max, self.arm_memory[*arm_index as usize].get_mean_reward());
+
+            // checks if we are still in the non dominated-set (current mean <= mean_max_pulls)
+            if self.arm_memory[*arm_index as usize].get_num_pulls() == max_number_pulls {
+                break;
+            }
+        }
+
+        // find the solution of non-dominated set with the lowest associated UCB value
+        let mut best_arm_index: i32 = 0;
+        let mut best_ucb_value: f64 = f64::MAX;
+
+
+        for (ucb_norm, arm_index) in self.sample_average_tree.iter() {
+            if ucb_norm_max == ucb_norm_min {
+                best_arm_index = *arm_index;
+            }
+
+            // transform sample mean to interval [0,1]
+            let transformed_sample_mean: f64 = (self.arm_memory[*arm_index as usize].get_mean_reward() - ucb_norm_min) / (ucb_norm_max - ucb_norm_min);
+            let penalty_term: f64 = (2.0 * (self.genetic_algorithm.get_simulations_used() as f64).ln() as f64 / self.arm_memory[*arm_index as usize].get_num_pulls() as f64).sqrt();
+            let ucb_value: f64 = transformed_sample_mean + penalty_term;
+
+            // new best solution found
+            if ucb_value < best_ucb_value {
+                best_arm_index = *arm_index;
+                best_ucb_value = ucb_value;
+            }
+
+            // checks if we are still in the non dominated-set (current mean <= mean_max_pulls)
+            if self.arm_memory[*arm_index as usize].get_num_pulls() == max_number_pulls {
+                break;
+            }
+        }
+
+
+        best_arm_index
     }
 }
