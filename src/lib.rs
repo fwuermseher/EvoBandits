@@ -52,7 +52,7 @@ impl From<FloatKey> for f64 {
     }
 }
 
-struct Gmab {
+pub struct Gmab {
     sample_average_tree: MultiMap<FloatKey, i32>,
     arm_memory: Vec<Arm>,
     lookup_tabel: HashMap<Vec<i32>, i32>,
@@ -82,7 +82,7 @@ impl Gmab {
         }
     }
 
-    fn new(
+    pub fn new(
         opti_function: fn(Vec<i32>) -> f64,
         population_size: usize,
         mutation_rate: f64,
@@ -142,7 +142,7 @@ impl Gmab {
 
         let mut ucb_norm_max: f64 = ucb_norm_min;
 
-        for (ucb_norm, arm_index) in self.sample_average_tree.iter() {
+        for (_ucb_norm, arm_index) in self.sample_average_tree.iter() {
             ucb_norm_max = f64::max(ucb_norm_max, self.arm_memory[*arm_index as usize].get_mean_reward());
 
             // checks if we are still in the non dominated-set (current mean <= mean_max_pulls)
@@ -197,7 +197,7 @@ impl Gmab {
         }
     }
 
-    fn optimize(&mut self) -> Vec<i32> {
+    pub fn optimize(&mut self, verbose: bool) -> Vec<i32> {
 
         loop {
             let crossover_pop = self.genetic_algorithm.crossover();
@@ -208,7 +208,7 @@ impl Gmab {
 
             for individual_index in 0..mutated_pop.len() {
 
-                let arm_index: i32 = self.lookup_tabel.get(&mutated_pop[individual_index].get_action_vector()).unwrap().clone();
+                let arm_index = self.get_arm_index(&mutated_pop[individual_index]);
                 self.sample_and_update(arm_index, mutated_pop[individual_index].clone());
                 if self.genetic_algorithm.budget_reached() {
                     return self.arm_memory[self.find_best_ucb() as usize].get_action_vector();
@@ -218,15 +218,24 @@ impl Gmab {
             let individuals = self.genetic_algorithm.get_individuals().clone();
 
             for individual in individuals {
-                let arm_index: i32 = self.lookup_tabel.get(&individual.get_action_vector()).unwrap().clone();
+                let arm_index = self.get_arm_index(&individual);
                 self.sample_and_update(arm_index, individual.clone());
                 if self.genetic_algorithm.budget_reached() {
                     return self.arm_memory[self.find_best_ucb() as usize].get_action_vector();
                 }
             }
 
+            if verbose {
+                println!("x: {:?}", self.arm_memory[self.find_best_ucb() as usize].get_action_vector());
+                // get averaged function value over 50 simulations
+                let mut sum = 0.0;
+                for _ in 0..50 {
+                    sum += (self.genetic_algorithm.opti_function)(self.arm_memory[self.find_best_ucb() as usize].get_action_vector().clone());
+                }
+                print!(" f(x): {:.3}", sum / 50.0);
+                print!(" n: {}", self.genetic_algorithm.get_simulations_used());
+            }
 
         }
-
     }
 }

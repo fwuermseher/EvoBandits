@@ -10,7 +10,7 @@ pub(crate) struct GeneticAlgorithm {
     mutation_span: f64,
     population_size: usize,
     individuals: Vec<Arm>,
-    opti_function: fn(Vec<i32>) -> f64,
+    pub(crate) opti_function: fn(Vec<i32>) -> f64,
     max_simulations: i32,
     dimension: usize,
     lower_bound: Vec<i32>,

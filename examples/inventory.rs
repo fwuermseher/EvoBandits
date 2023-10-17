@@ -2,6 +2,8 @@ use rand_distr::{Poisson, Distribution};
 
 use gmab::some_function;
 
+use gmab::Gmab;
+
 
 fn random_poisson(lambda: f64) -> i32 {
     let poi = Poisson::new(lambda).unwrap();
@@ -1267,7 +1269,7 @@ fn get_true_objective_value(action_vector: &Vec<i32>) -> f64 {
 }
 
 fn inventory(action_vector: Vec<i32>) -> f64 {
-    let noise_level = 0;
+    let noise_level = 1;
     let s = action_vector[0];
     let big_s = action_vector[1] + s;
     let mut inventory_before_ordering = big_s;
@@ -1307,4 +1309,17 @@ fn main() {
     // Example usage
     let action_vector = vec![17, 36];
     some_function(inventory, action_vector);
+
+    let mut genetic_multi_armed_bandit = Gmab::new(inventory, 20, 0.25, 1.0, 0.1, 10000, 2, vec![1, 1], vec![100, 100]);
+    let result = genetic_multi_armed_bandit.optimize(true);
+    println!("Result: {:?}", result);
+
+    // call inventory function multiple times with result and average the results
+    let mut results = Vec::new();
+    for _i in 0..100 {
+        results.push(inventory(result.clone()));
+    }
+    let average = results.iter().sum::<f64>() / results.len() as f64;
+    println!("Average: {}", average);
+
 }
