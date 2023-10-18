@@ -24,15 +24,11 @@ impl Arm {
         return g;
     }
 
-    fn get_reward(&self) -> f64 {
-        return self.reward;
-    }
-
     pub(crate) fn get_num_pulls(&self) -> i32 {
         return self.num_pulls;
     }
 
-    fn get_function_value(&self) -> f64 {
+    pub(crate) fn get_function_value(&self) -> f64 {
         return (self.arm_fn)(self.action_vector.clone());
     }
 
@@ -57,7 +53,6 @@ impl Clone for Arm {
     }
 }
 
-use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
 impl PartialEq for Arm {
