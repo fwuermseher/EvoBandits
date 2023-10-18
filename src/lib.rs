@@ -203,6 +203,15 @@ impl Gmab {
 
     pub fn optimize(&mut self, verbose: bool) -> Vec<i32> {
         loop {
+
+            self.genetic_algorithm.get_individuals().clear();
+
+            // get first self.population_size elements from sorted tree and use value to get arm
+            self.sample_average_tree.iter().take(self.genetic_algorithm.get_population_size()).for_each(|(_key, arm_index)| {
+                self.genetic_algorithm.get_individuals().push(self.arm_memory[*arm_index as usize].clone());
+            });
+
+
             let crossover_pop = self.genetic_algorithm.crossover();
 
             // mutate automatically removes duplicates
