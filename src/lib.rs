@@ -215,7 +215,7 @@ impl Gmab {
             let crossover_pop = self.genetic_algorithm.crossover();
 
             // mutate automatically removes duplicates
-            let mutated_pop = self.genetic_algorithm.mutate(crossover_pop);
+            let mutated_pop = self.genetic_algorithm.mutate(&crossover_pop);
 
 
             for individual_index in 0..mutated_pop.len() {

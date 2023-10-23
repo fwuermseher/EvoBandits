@@ -23,7 +23,7 @@ impl GeneticAlgorithm {
         return self.population_size;
     }
 
-    pub(crate) fn get_individuals(&mut self) ->  &mut Vec<Arm> {
+    pub(crate) fn get_individuals(&mut self) -> &mut Vec<Arm> {
         return &mut self.individuals;
     }
 
@@ -55,8 +55,8 @@ impl GeneticAlgorithm {
 
         for _ in 0..population_size {
             let action_vector = GeneticAlgorithm::generate_unique_solution(&init_solutions, &lower_bound, &upper_bound, dimension);
-            init_solutions.push(action_vector);
-            individuals.push(Arm::new(opti_function, init_solutions.last().unwrap().clone()));
+            init_solutions.push(action_vector.clone());
+            individuals.push(Arm::new(opti_function, action_vector));
         }
 
         GeneticAlgorithm {
@@ -75,21 +75,20 @@ impl GeneticAlgorithm {
     }
 
     fn generate_unique_solution(
-        solutions: &Vec<Vec<i32>>,
-        lower_bound: &Vec<i32>,
-        upper_bound: &Vec<i32>,
+        existing_solutions: &[Vec<i32>],
+        lower_bound: &[i32],
+        upper_bound: &[i32],
         dimension: usize,
     ) -> Vec<i32> {
         let mut rng = rand::thread_rng();
 
         loop {
-            let mut v: Vec<i32> = Vec::new();
-            for j in 0..dimension {
-                v.push(rng.gen_range(lower_bound[j]..=upper_bound[j]));
-            }
+            let candidate_solution: Vec<i32> = (0..dimension)
+                .map(|j| rng.gen_range(lower_bound[j]..=upper_bound[j]))
+                .collect();
 
-            if !solutions.contains(&v) {
-                return v;
+            if !existing_solutions.contains(&candidate_solution) {
+                return candidate_solution;
             }
         }
     }
@@ -139,31 +138,181 @@ impl GeneticAlgorithm {
         crossover_pop
     }
 
-    pub(crate) fn mutate(&self, population: Vec<Arm>) -> Vec<Arm> {
-        let mut mutated_population: Vec<Arm> = Vec::new();
+    pub(crate) fn mutate(&self, population: &[Arm]) -> Vec<Arm> {
+        let mut mutated_population = Vec::new();
         let mut seen = HashSet::new();
+        let mut rng = rand::thread_rng();
 
-        for individual in &population {
+        for individual in population.iter() {
             let mut new_action_vector = individual.get_action_vector().clone();
-            for i in 0..self.dimension {
-                if rand::random::<f64>() < self.mutation_rate {
-                    let mut new_value = new_action_vector[i] as f64;
-                    new_value += Normal::new(0.0, self.mutation_span * (self.upper_bound[i] - self.lower_bound[i]) as f64)
+
+            for (i, value) in new_action_vector.iter_mut().enumerate() {
+                if rng.gen::<f64>() < self.mutation_rate {
+                    let adjustment = Normal::new(0.0, self.mutation_span * (self.upper_bound[i] - self.lower_bound[i]) as f64)
                         .unwrap()
-                        .sample(&mut rand::thread_rng());
-                    new_value = new_value.max(self.lower_bound[i] as f64);
-                    new_value = new_value.min(self.upper_bound[i] as f64);
-                    new_action_vector[i] = new_value as i32;
+                        .sample(&mut rng);
+
+                    *value = (*value as f64 + adjustment)
+                        .max(self.lower_bound[i] as f64)
+                        .min(self.upper_bound[i] as f64) as i32;
                 }
             }
-            let new_individual = Arm::new(individual.arm_fn, new_action_vector);  // Assuming you have a constructor like this
-            // Only insert new_individual into mutated_population if it hasn't been seen yet
+
+            let new_individual = Arm::new(individual.arm_fn, new_action_vector);
+
             if seen.insert(new_individual.clone()) {
                 mutated_population.push(new_individual);
             }
-
         }
 
         mutated_population
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Mock optimization function for testing
+    fn mock_opti_function(_vec: Vec<i32>) -> f64 {
+        0.0
+    }
+
+    #[test]
+    fn test_get_population_size() {
+        let ga = GeneticAlgorithm::new(
+            mock_opti_function,
+            10,
+            0.1,
+            0.9,
+            0.5,
+            100,
+            2,
+            vec![0, 0],
+            vec![10, 10],
+        );
+        assert_eq!(ga.get_population_size(), 10);
+    }
+
+    #[test]
+    fn test_get_individuals() {
+        let mut ga = GeneticAlgorithm::new(
+            mock_opti_function,
+            10,
+            0.1,
+            0.9,
+            0.5,
+            100,
+            2,
+            vec![0, 0],
+            vec![10, 10],
+        );
+        assert_eq!(ga.get_individuals().len(), 10);
+    }
+
+    #[test]
+    fn test_get_simulations_used() {
+        let ga = GeneticAlgorithm::new(
+            mock_opti_function,
+            10,
+            0.1,
+            0.9,
+            0.5,
+            100,
+            2,
+            vec![0, 0],
+            vec![10, 10],
+        );
+        assert_eq!(ga.get_simulations_used(), 0);
+    }
+
+    #[test]
+    fn test_update_simulations_used() {
+        let mut ga = GeneticAlgorithm::new(
+            mock_opti_function,
+            10,
+            0.1,
+            0.9,
+            0.5,
+            100,
+            2,
+            vec![0, 0],
+            vec![10, 10],
+        );
+        ga.update_simulations_used(5);
+        assert_eq!(ga.get_simulations_used(), 5);
+    }
+
+    #[test]
+    fn test_budget_reached() {
+        let mut ga = GeneticAlgorithm::new(
+            mock_opti_function,
+            10,
+            0.1,
+            0.9,
+            0.5,
+            100,
+            2,
+            vec![0, 0],
+            vec![10, 10],
+        );
+        assert_eq!(ga.budget_reached(), false);
+        ga.update_simulations_used(100);
+        assert_eq!(ga.budget_reached(), true);
+    }
+
+    #[test]
+    fn test_mutate() {
+        let ga = GeneticAlgorithm::new(
+            mock_opti_function,
+            2, // Two individuals in population
+            1.0, // 100% mutation rate for demonstration
+            0.9,
+            1.0,
+            100,
+            2,
+            vec![0, 0],
+            vec![10, 10],
+        );
+
+        let initial_population = vec![
+            Arm::new(mock_opti_function, vec![1, 1]),
+            Arm::new(mock_opti_function, vec![2, 2])
+        ];
+
+        let mutated_population = ga.mutate(&initial_population);
+
+        // Assuming the mutation is deterministic and in the expected bounds, you'd check like this:
+        for (i, individual) in mutated_population.iter().enumerate() {
+            let init_vector = initial_population[i].get_action_vector();
+            let mut_vector = individual.get_action_vector();
+
+            for j in 0..ga.dimension {
+                assert!(mut_vector[j] >= ga.lower_bound[j]);
+                assert!(mut_vector[j] <= ga.upper_bound[j]);
+                assert_ne!(mut_vector[j], init_vector[j]); // since mutation rate is 100%
+            }
+        }
+    }
+
+    #[test]
+    fn test_crossover() {
+        let ga = GeneticAlgorithm::new(
+            mock_opti_function,
+            2, // Two individuals for simplicity
+            0.1,
+            1.0, // 100% crossover rate for demonstration
+            0.5,
+            100,
+            2,
+            vec![0, 0],
+            vec![10, 10],
+        );
+
+        let crossover_population = ga.crossover();
+
+        // Since the crossover rate is 100%, the two individuals should not be identical to the original individuals
+        assert_ne!(crossover_population[0].get_action_vector(), ga.individuals[0].get_action_vector());
+        assert_ne!(crossover_population[1].get_action_vector(), ga.individuals[1].get_action_vector());
     }
 }

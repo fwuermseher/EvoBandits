@@ -1311,12 +1311,12 @@ fn main() {
     some_function(inventory, action_vector);
 
     let mut genetic_multi_armed_bandit = Gmab::new(inventory, 20, 0.25, 1.0, 0.1, 10000, 2, vec![1, 1], vec![100, 100]);
-    let result = genetic_multi_armed_bandit.optimize(true);
+    let result = genetic_multi_armed_bandit.optimize(false);
     println!("Result: {:?}", result);
 
     // call inventory function multiple times with result and average the results
     let mut results = Vec::new();
-    for _i in 0..100 {
+    for _i in 0..400 {
         results.push(inventory(result.clone()));
     }
     let average = results.iter().sum::<f64>() / results.len() as f64;
