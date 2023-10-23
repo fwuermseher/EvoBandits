@@ -1,25 +1,6 @@
 mod arm;
 mod genetic;
 
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
-
-pub fn some_function(inventory_fn: fn(Vec<i32>) -> f64, action_vector: Vec<i32>) {
-    let result = inventory_fn(action_vector);
-    println!("Result from inventory function: {}", result);
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
 
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap};
@@ -64,7 +45,7 @@ impl<K: Ord, V: PartialEq> SortedMultiMap<K, V> {
         false
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (&K, &V)> {
+    pub fn iter(&self) -> impl Iterator<Item=(&K, &V)> {
         self.inner.iter().flat_map(|(key, values)| {
             values.iter().map(move |value| (key, value))
         })
@@ -81,14 +62,14 @@ pub struct Gmab {
 
 impl Gmab {
     fn get_arm_index(&self, individual: &Arm) -> i32 {
-        match self.lookup_tabel.get(&individual.get_action_vector()) {
+        match self.lookup_tabel.get(&individual.get_action_vector().to_vec()) {
             Some(&index) => index,
             None => -1,
         }
     }
 
     pub fn new(
-        opti_function: fn(Vec<i32>) -> f64,
+        opti_function: fn(&[i32]) -> f64,
         population_size: usize,
         mutation_rate: f64,
         crossover_rate: f64,
@@ -116,7 +97,7 @@ impl Gmab {
         for (index, individual) in genetic_algorithm.get_individuals().iter_mut().enumerate() {
             individual.pull();
             arm_memory.push(individual.clone());
-            lookup_tabel.insert(individual.get_action_vector(), index as i32);
+            lookup_tabel.insert(individual.get_action_vector().to_vec(), index as i32);
             sample_average_tree.insert(FloatKey(individual.get_mean_reward()), index as i32);
         }
 
@@ -196,14 +177,13 @@ impl Gmab {
             individual.pull();
             self.genetic_algorithm.update_simulations_used(1);
             self.arm_memory.push(individual.clone());
-            self.lookup_tabel.insert(individual.get_action_vector(), self.arm_memory.len() as i32 - 1);
+            self.lookup_tabel.insert(individual.get_action_vector().to_vec(), self.arm_memory.len() as i32 - 1);
             self.sample_average_tree.insert(FloatKey(individual.get_mean_reward()), self.arm_memory.len() as i32 - 1);
         }
     }
 
     pub fn optimize(&mut self, verbose: bool) -> Vec<i32> {
         loop {
-
             self.genetic_algorithm.get_individuals().clear();
 
             // get first self.population_size elements from sorted tree and use value to get arm
@@ -222,7 +202,7 @@ impl Gmab {
                 let arm_index = self.get_arm_index(&mutated_pop[individual_index]);
                 self.sample_and_update(arm_index, mutated_pop[individual_index].clone());
                 if self.genetic_algorithm.budget_reached() {
-                    return self.arm_memory[self.find_best_ucb() as usize].get_action_vector();
+                    return self.arm_memory[self.find_best_ucb() as usize].get_action_vector().to_vec();
                 }
             }
 
@@ -232,7 +212,7 @@ impl Gmab {
                 let arm_index = self.get_arm_index(&individual);
                 self.sample_and_update(arm_index, individual.clone());
                 if self.genetic_algorithm.budget_reached() {
-                    return self.arm_memory[self.find_best_ucb() as usize].get_action_vector();
+                    return self.arm_memory[self.find_best_ucb() as usize].get_action_vector().to_vec();
                 }
             }
 

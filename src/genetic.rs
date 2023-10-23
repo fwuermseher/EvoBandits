@@ -10,7 +10,7 @@ pub(crate) struct GeneticAlgorithm {
     mutation_span: f64,
     population_size: usize,
     individuals: Vec<Arm>,
-    pub(crate) opti_function: fn(Vec<i32>) -> f64,
+    pub(crate) opti_function: fn(&[i32]) -> f64,
     max_simulations: i32,
     dimension: usize,
     lower_bound: Vec<i32>,
@@ -40,7 +40,7 @@ impl GeneticAlgorithm {
     }
 
     pub(crate) fn new(
-        opti_function: fn(Vec<i32>) -> f64,
+        opti_function: fn(&[i32]) -> f64,
         population_size: usize,
         mutation_rate: f64,
         crossover_rate: f64,
@@ -56,7 +56,7 @@ impl GeneticAlgorithm {
         for _ in 0..population_size {
             let action_vector = GeneticAlgorithm::generate_unique_solution(&init_solutions, &lower_bound, &upper_bound, dimension);
             init_solutions.push(action_vector.clone());
-            individuals.push(Arm::new(opti_function, action_vector));
+            individuals.push(Arm::new(opti_function, &action_vector));
         }
 
         GeneticAlgorithm {
@@ -121,8 +121,8 @@ impl GeneticAlgorithm {
                             cross_vec_2.push(self.individuals[i].get_action_vector()[h]);
                         }
 
-                        let new_individual_1 = Arm::new(self.opti_function, cross_vec_1);
-                        let new_individual_2 = Arm::new(self.opti_function, cross_vec_2);
+                        let new_individual_1 = Arm::new(self.opti_function, &cross_vec_1);
+                        let new_individual_2 = Arm::new(self.opti_function, &cross_vec_2);
 
                         crossover_pop.push(new_individual_1);
                         crossover_pop.push(new_individual_2);
@@ -144,9 +144,9 @@ impl GeneticAlgorithm {
         let mut rng = rand::thread_rng();
 
         for individual in population.iter() {
-            let mut new_action_vector = individual.get_action_vector().clone();
+            let new_action_vector = individual.get_action_vector().clone();
 
-            for (i, value) in new_action_vector.iter_mut().enumerate() {
+            for (i, value) in new_action_vector.to_vec().iter_mut().enumerate() {
                 if rng.gen::<f64>() < self.mutation_rate {
                     let adjustment = Normal::new(0.0, self.mutation_span * (self.upper_bound[i] - self.lower_bound[i]) as f64)
                         .unwrap()
@@ -174,7 +174,7 @@ mod tests {
     use super::*;
 
     // Mock optimization function for testing
-    fn mock_opti_function(_vec: Vec<i32>) -> f64 {
+    fn mock_opti_function(_vec: &[i32]) -> f64 {
         0.0
     }
 
@@ -276,8 +276,8 @@ mod tests {
         );
 
         let initial_population = vec![
-            Arm::new(mock_opti_function, vec![1, 1]),
-            Arm::new(mock_opti_function, vec![2, 2])
+            Arm::new(mock_opti_function, &vec![1, 1]),
+            Arm::new(mock_opti_function, &vec![2, 2])
         ];
 
         let mutated_population = ga.mutate(&initial_population);

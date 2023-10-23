@@ -3,21 +3,21 @@ pub(crate) struct Arm {
     action_vector: Vec<i32>,
     reward: f64,
     num_pulls: i32,
-    pub(crate) arm_fn: fn(Vec<i32>) -> f64,
+    pub(crate) arm_fn: fn(&[i32]) -> f64,
 }
 
 impl Arm {
-    pub(crate) fn new(arm_fn: fn(Vec<i32>) -> f64, action_vector: Vec<i32>) -> Arm {
+    pub(crate) fn new(arm_fn: fn(&[i32]) -> f64, action_vector: &[i32]) -> Arm {
         Arm {
             reward: 0.0,
             num_pulls: 0,
             arm_fn,
-            action_vector,
+            action_vector: action_vector.to_vec(),
         }
     }
 
     pub(crate) fn pull(&mut self) -> f64 {
-        let g = (self.arm_fn)(self.action_vector.clone());
+        let g = (self.arm_fn)(&self.action_vector);
 
         self.reward += g;
         self.num_pulls += 1;
@@ -30,11 +30,11 @@ impl Arm {
     }
 
     pub(crate) fn get_function_value(&self) -> f64 {
-        return (self.arm_fn)(self.action_vector.clone());
+        return (self.arm_fn)(&self.action_vector);
     }
 
-    pub(crate) fn get_action_vector(&self) -> Vec<i32> {
-        return self.action_vector.clone();
+    pub(crate) fn get_action_vector(&self) -> &[i32] {
+        return &self.action_vector;
     }
 
     pub(crate) fn get_mean_reward(&self) -> f64 {
@@ -75,20 +75,20 @@ mod tests {
     use super::*;
 
     // Mock optimization function for testing
-    fn mock_opti_function(_vec: Vec<i32>) -> f64 {
+    fn mock_opti_function(_vec: &[i32]) -> f64 {
         5.0
     }
 
     #[test]
     fn test_arm_new() {
-        let arm = Arm::new(mock_opti_function, vec![1, 2]);
+        let arm = Arm::new(mock_opti_function, &vec![1, 2]);
         assert_eq!(arm.get_num_pulls(), 0);
         assert_eq!(arm.get_function_value(), 5.0);
     }
 
     #[test]
     fn test_arm_pull() {
-        let mut arm = Arm::new(mock_opti_function, vec![1, 2]);
+        let mut arm = Arm::new(mock_opti_function, &vec![1, 2]);
         let reward = arm.pull();
 
         assert_eq!(reward, 5.0);
@@ -98,7 +98,7 @@ mod tests {
 
     #[test]
     fn test_arm_pull_multiple() {
-        let mut arm = Arm::new(mock_opti_function, vec![1, 2]);
+        let mut arm = Arm::new(mock_opti_function, &vec![1, 2]);
         arm.pull();
         arm.pull();
 
@@ -108,7 +108,7 @@ mod tests {
 
     #[test]
     fn test_arm_clone() {
-        let arm = Arm::new(mock_opti_function, vec![1, 2]);
+        let arm = Arm::new(mock_opti_function, &vec![1, 2]);
         let cloned_arm = arm.clone();
 
         assert_eq!(arm.get_num_pulls(), cloned_arm.get_num_pulls());
@@ -118,9 +118,9 @@ mod tests {
 
     #[test]
     fn test_arm_equality() {
-        let arm1 = Arm::new(mock_opti_function, vec![1, 2]);
-        let arm2 = Arm::new(mock_opti_function, vec![1, 2]);
-        let arm3 = Arm::new(mock_opti_function, vec![2, 1]);
+        let arm1 = Arm::new(mock_opti_function, &vec![1, 2]);
+        let arm2 = Arm::new(mock_opti_function, &vec![1, 2]);
+        let arm3 = Arm::new(mock_opti_function, &vec![2, 1]);
 
         assert_eq!(arm1, arm2);
         assert_ne!(arm1, arm3);

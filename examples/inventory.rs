@@ -1,7 +1,5 @@
 use rand_distr::{Poisson, Distribution};
 
-use gmab::some_function;
-
 use gmab::Gmab;
 
 
@@ -12,7 +10,7 @@ fn random_poisson(lambda: f64) -> i32 {
 }
 
 
-fn get_true_objective_value(action_vector: &Vec<i32>) -> f64 {
+fn get_true_objective_value(action_vector: &[i32]) -> f64 {
     let results = vec![
         218.435, 213.435, 208.435, 203.435, 198.435, 193.435, 188.435, 183.436,
         178.437, 173.443, 168.457, 163.494, 158.577, 153.751, 149.088, 144.692,
@@ -1268,7 +1266,7 @@ fn get_true_objective_value(action_vector: &Vec<i32>) -> f64 {
     return results[((action_vector[0] - 1) * 100 + (action_vector[1] - 1)) as usize]
 }
 
-fn inventory(action_vector: Vec<i32>) -> f64 {
+fn inventory(action_vector: &[i32]) -> f64 {
     let noise_level = 1;
     let s = action_vector[0];
     let big_s = action_vector[1] + s;
@@ -1306,20 +1304,34 @@ fn inventory(action_vector: Vec<i32>) -> f64 {
 }
 
 fn main() {
-    // Example usage
-    let action_vector = vec![17, 36];
-    some_function(inventory, action_vector);
+    let num_runs = 100;
+    let mut total_value = 0.0;
 
-    let mut genetic_multi_armed_bandit = Gmab::new(inventory, 20, 0.25, 1.0, 0.1, 10000, 2, vec![1, 1], vec![100, 100]);
-    let result = genetic_multi_armed_bandit.optimize(false);
-    println!("Result: {:?}", result);
+    for i in 0..num_runs {
+        let mut genetic_multi_armed_bandit = Gmab::new(
+            inventory,
+            20,
+            0.25,
+            1.0,
+            0.1,
+            10000,
+            2,
+            vec![1, 1],
+            vec![100, 100]
+        );
+        let result = genetic_multi_armed_bandit.optimize(false);
 
-    // call inventory function multiple times with result and average the results
-    let mut results = Vec::new();
-    for _i in 0..400 {
-        results.push(inventory(result.clone()));
+        let true_objective_value = get_true_objective_value(&result);
+        total_value += true_objective_value;
+
+        // Print the counter and the true objective value every 10 runs
+        if (i + 1) % 10 == 0 {
+            println!("Run {}: True Objective Value for This Run: {}", i + 1, true_objective_value);
+        }
     }
-    let average = results.iter().sum::<f64>() / results.len() as f64;
-    println!("Average: {}", average);
 
+    let average_value = total_value / num_runs as f64;
+    println!("Average Objective Value: {}", average_value);
 }
+
+
