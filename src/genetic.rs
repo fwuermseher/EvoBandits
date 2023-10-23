@@ -2,6 +2,7 @@ use std::collections::HashSet;
 use crate::arm::Arm;
 use rand_distr::{Normal, Distribution};
 use rand::Rng;
+use rand::seq::SliceRandom;
 
 
 pub(crate) struct GeneticAlgorithm {
@@ -91,6 +92,11 @@ impl GeneticAlgorithm {
                 return candidate_solution;
             }
         }
+    }
+
+    pub(crate) fn shuffle_population(&mut self) {
+        let mut rng = rand::thread_rng();
+        self.individuals.shuffle(&mut rng);
     }
 
     pub(crate) fn crossover(&self) -> Vec<Arm> {

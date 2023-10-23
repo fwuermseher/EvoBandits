@@ -57,7 +57,7 @@ pub struct Gmab {
     arm_memory: Vec<Arm>,
     lookup_tabel: HashMap<Vec<i32>, i32>,
     genetic_algorithm: GeneticAlgorithm,
-
+    current_indexes: Vec<i32>,
 }
 
 impl Gmab {
@@ -106,6 +106,7 @@ impl Gmab {
             arm_memory,
             lookup_tabel,
             genetic_algorithm,
+            current_indexes: Vec::new(),
         }
     }
 
@@ -169,7 +170,7 @@ impl Gmab {
 
     fn sample_and_update(&mut self, arm_index: i32, mut individual: Arm) {
         if arm_index >= 0 {
-            self.sample_average_tree.delete(&FloatKey(individual.get_mean_reward()), &arm_index);
+            self.sample_average_tree.delete(&FloatKey(self.arm_memory[arm_index as usize].get_mean_reward()), &arm_index);
             self.arm_memory[arm_index as usize].pull();
             self.genetic_algorithm.update_simulations_used(1);
             self.sample_average_tree.insert(FloatKey(self.arm_memory[arm_index as usize].get_mean_reward()), arm_index);
@@ -185,11 +186,16 @@ impl Gmab {
     pub fn optimize(&mut self, verbose: bool) -> Vec<i32> {
         loop {
             self.genetic_algorithm.get_individuals().clear();
+            self.current_indexes.clear();
 
             // get first self.population_size elements from sorted tree and use value to get arm
             self.sample_average_tree.iter().take(self.genetic_algorithm.get_population_size()).for_each(|(_key, arm_index)| {
                 self.genetic_algorithm.get_individuals().push(self.arm_memory[*arm_index as usize].clone());
+                self.current_indexes.push(*arm_index);
             });
+
+            // shuffle population
+            self.genetic_algorithm.shuffle_population();
 
 
             let crossover_pop = self.genetic_algorithm.crossover();
@@ -199,8 +205,16 @@ impl Gmab {
 
 
             for individual_index in 0..mutated_pop.len() {
+
                 let arm_index = self.get_arm_index(&mutated_pop[individual_index]);
+
+                // check if arm is in current population
+                if self.current_indexes.contains(&arm_index) {
+                    continue;
+                }
+
                 self.sample_and_update(arm_index, mutated_pop[individual_index].clone());
+
                 if self.genetic_algorithm.budget_reached() {
                     return self.arm_memory[self.find_best_ucb() as usize].get_action_vector().to_vec();
                 }
@@ -209,25 +223,28 @@ impl Gmab {
             let individuals = self.genetic_algorithm.get_individuals().clone();
 
             for individual in individuals {
+
                 let arm_index = self.get_arm_index(&individual);
                 self.sample_and_update(arm_index, individual.clone());
+
                 if self.genetic_algorithm.budget_reached() {
                     return self.arm_memory[self.find_best_ucb() as usize].get_action_vector().to_vec();
                 }
             }
 
             if verbose {
-                print!("x: {:?}", self.arm_memory[self.find_best_ucb() as usize].get_action_vector());
+                let best_arm_index = self.find_best_ucb();
+                print!("x: {:?}", self.arm_memory[best_arm_index as usize].get_action_vector());
                 // get averaged function value over 50 simulations
                 let mut sum = 0.0;
                 for _ in 0..50 {
-                    sum += self.arm_memory[self.find_best_ucb() as usize].get_function_value();
+                    sum += self.arm_memory[best_arm_index as usize].get_function_value();
                 }
                 print!(" f(x): {:.3}", sum / 50.0);
 
                 print!(" n: {}", self.genetic_algorithm.get_simulations_used());
                 // print number of pulls of best arm
-                println!(" n(x): {}", self.arm_memory[self.find_best_ucb() as usize].get_num_pulls());
+                println!(" n(x): {}", self.arm_memory[best_arm_index as usize].get_num_pulls());
             }
         }
     }
