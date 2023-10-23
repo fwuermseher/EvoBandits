@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub(crate) struct Arm {
     action_vector: Vec<i32>,
     reward: f64,
@@ -67,4 +68,62 @@ impl Hash for Arm {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.action_vector.hash(state);
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Mock optimization function for testing
+    fn mock_opti_function(_vec: Vec<i32>) -> f64 {
+        5.0
+    }
+
+    #[test]
+    fn test_arm_new() {
+        let arm = Arm::new(mock_opti_function, vec![1, 2]);
+        assert_eq!(arm.get_num_pulls(), 0);
+        assert_eq!(arm.get_function_value(), 5.0);
+    }
+
+    #[test]
+    fn test_arm_pull() {
+        let mut arm = Arm::new(mock_opti_function, vec![1, 2]);
+        let reward = arm.pull();
+
+        assert_eq!(reward, 5.0);
+        assert_eq!(arm.get_num_pulls(), 1);
+        assert_eq!(arm.get_mean_reward(), 5.0);
+    }
+
+    #[test]
+    fn test_arm_pull_multiple() {
+        let mut arm = Arm::new(mock_opti_function, vec![1, 2]);
+        arm.pull();
+        arm.pull();
+
+        assert_eq!(arm.get_num_pulls(), 2);
+        assert_eq!(arm.get_mean_reward(), 5.0);  // Since reward is always 5.0
+    }
+
+    #[test]
+    fn test_arm_clone() {
+        let arm = Arm::new(mock_opti_function, vec![1, 2]);
+        let cloned_arm = arm.clone();
+
+        assert_eq!(arm.get_num_pulls(), cloned_arm.get_num_pulls());
+        assert_eq!(arm.get_function_value(), cloned_arm.get_function_value());
+        assert_eq!(arm.get_action_vector(), cloned_arm.get_action_vector());
+    }
+
+    #[test]
+    fn test_arm_equality() {
+        let arm1 = Arm::new(mock_opti_function, vec![1, 2]);
+        let arm2 = Arm::new(mock_opti_function, vec![1, 2]);
+        let arm3 = Arm::new(mock_opti_function, vec![2, 1]);
+
+        assert_eq!(arm1, arm2);
+        assert_ne!(arm1, arm3);
+    }
+
 }
