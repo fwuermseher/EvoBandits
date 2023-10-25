@@ -1310,7 +1310,7 @@ fn main() {
     for i in 0..num_runs {
         let mut genetic_multi_armed_bandit = Gmab::new(
             inventory,
-            20,
+            100,
             0.25,
             1.0,
             0.1,
