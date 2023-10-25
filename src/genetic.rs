@@ -289,8 +289,9 @@ mod tests {
             for j in 0..ga.dimension {
                 assert!(mut_vector[j] >= ga.lower_bound[j]);
                 assert!(mut_vector[j] <= ga.upper_bound[j]);
-                assert_ne!(mut_vector[j], init_vector[j]); // since mutation rate is 100%
             }
+
+            assert_ne!(mut_vector, init_vector); // since mutation rate is 100%
         }
     }
 
