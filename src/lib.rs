@@ -249,3 +249,193 @@ impl Gmab {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sorted_multi_map_insert() {
+        let mut map = SortedMultiMap::new();
+        map.insert(FloatKey(1.0), 1);
+        map.insert(FloatKey(1.0), 2);
+        map.insert(FloatKey(2.0), 3);
+
+        let mut iter = map.iter();
+
+        assert_eq!(iter.next(), Some((&FloatKey(1.0), &1)));
+        assert_eq!(iter.next(), Some((&FloatKey(1.0), &2)));
+        assert_eq!(iter.next(), Some((&FloatKey(2.0), &3)));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn test_sorted_multi_map_delete() {
+        let mut map = SortedMultiMap::new();
+        map.insert(FloatKey(1.0), 1);
+        map.insert(FloatKey(1.0), 2);
+        map.insert(FloatKey(2.0), 3);
+
+        assert!(map.delete(&FloatKey(1.0), &1));
+        assert!(map.delete(&FloatKey(2.0), &3));
+        assert!(!map.delete(&FloatKey(2.0), &3));
+
+        let mut iter = map.iter();
+
+        assert_eq!(iter.next(), Some((&FloatKey(1.0), &2)));
+        assert_eq!(iter.next(), None);
+    }
+
+    fn mock_opti_function(_vec: &[i32]) -> f64 {
+        0.0
+    }
+
+    #[test]
+    fn test_gmab_new() {
+        let gmab = Gmab::new(
+            mock_opti_function,
+            10,
+            0.1,
+            0.9,
+            0.5,
+            100,
+            2,
+            vec![0, 0],
+            vec![10, 10],
+        );
+        assert_eq!(gmab.genetic_algorithm.get_population_size(), 10);
+        assert_eq!(gmab.arm_memory.len(), 10);
+        assert_eq!(gmab.lookup_tabel.len(), 10);
+
+        // check if there are 10  elements in sample_average_tree
+        let mut count = 0;
+        for _ in gmab.sample_average_tree.iter() {
+            count += 1;
+        }
+        assert_eq!(count, 10);
+
+    }
+
+    #[test]
+    fn test_gmab_get_arm_index_with_empty() {
+        let gmab = Gmab::new(
+            mock_opti_function,
+            10,
+            0.1,
+            0.9,
+            0.5,
+            100,
+            2,
+            vec![0, 0],
+            vec![10, 10],
+        );
+        let arm = Arm::new(mock_opti_function, &vec![1, 2]);
+        assert_eq!(gmab.get_arm_index(&arm), -1);
+    }
+
+    #[test]
+    fn test_gmab_get_arm_index_with_existing() {
+        let mut gmab = Gmab::new(
+            mock_opti_function,
+            10,
+            0.1,
+            0.9,
+            0.5,
+            100,
+            2,
+            vec![0, 0],
+            vec![10, 10],
+        );
+        let arm = Arm::new(mock_opti_function, &vec![1, 2]);
+        gmab.arm_memory.push(arm.clone());
+        gmab.lookup_tabel.insert(arm.get_action_vector().to_vec(), 0);
+        assert_eq!(gmab.get_arm_index(&arm), 0);
+    }
+
+    #[test]
+    fn test_gmab_max_number_pulls() {
+        let gmab = Gmab::new(
+            mock_opti_function,
+            10,
+            0.1,
+            0.9,
+            0.5,
+            100,
+            2,
+            vec![0, 0],
+            vec![10, 10],
+        );
+        assert_eq!(gmab.max_number_pulls(), 1);
+    }
+
+    #[test]
+    fn test_gmab_find_best_ucb() {
+        let gmab = Gmab::new(
+            mock_opti_function,
+            10,
+            0.1,
+            0.9,
+            0.5,
+            100,
+            2,
+            vec![0, 0],
+            vec![10, 10],
+        );
+        assert_eq!(gmab.find_best_ucb(), 0);
+    }
+
+    #[test]
+    fn test_gmab_find_best_ucb_with_existing() {
+        let mut gmab = Gmab::new(
+            mock_opti_function,
+            10,
+            0.1,
+            0.9,
+            0.5,
+            100,
+            2,
+            vec![0, 0],
+            vec![10, 10],
+        );
+
+        let arm = Arm::new(mock_opti_function, &vec![1, 2]);
+        gmab.arm_memory.push(arm.clone());
+        gmab.lookup_tabel.insert(arm.get_action_vector().to_vec(), 0);
+
+        let arm2 = Arm::new(mock_opti_function, &vec![1, 2]);
+        gmab.arm_memory.push(arm2.clone());
+        gmab.lookup_tabel.insert(arm2.get_action_vector().to_vec(), 1);
+
+        gmab.sample_and_update(0, arm.clone());
+        gmab.sample_and_update(1, arm2.clone());
+
+        assert_eq!(gmab.find_best_ucb(), 0);
+    }
+
+    #[test]
+    fn test_gmab_sample_and_update_with_existing() {
+        let mut gmab = Gmab::new(
+            mock_opti_function,
+            10,
+            0.1,
+            0.9,
+            0.5,
+            100,
+            2,
+            vec![0, 0],
+            vec![10, 10],
+        );
+
+        let arm = Arm::new(mock_opti_function, &vec![1, 2]);
+        gmab.arm_memory.push(arm.clone());
+        gmab.lookup_tabel.insert(arm.get_action_vector().to_vec(), 0);
+
+        gmab.sample_and_update(0, arm.clone());
+
+        assert_eq!(gmab.arm_memory[0].get_num_pulls(), 2);
+        assert_eq!(gmab.arm_memory[0].get_mean_reward(), 0.0);
+        assert_eq!(gmab.lookup_tabel.get(&arm.get_action_vector().to_vec()), Some(&0));
+    }
+
+
+}
