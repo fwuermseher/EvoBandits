@@ -1,7 +1,11 @@
-# GMAB
-GMAB is a novel optimization algorithm for stochastic problems.
+<p align="center">
+  <img src="Logo.webp" alt="GMAB" width="200"/>
+</p>
+<p align="center">
+    <em>GMAB is a novel optimization algorithm for stochastic problems.</em>
+</p>
 
-![GMAB](Logo.webp)
+---
 
 ## Usage
 To install GMAB, add the following to your Cargo.toml file:
