@@ -40,6 +40,9 @@ impl Arm {
     }
 
     pub(crate) fn get_mean_reward(&self) -> f64 {
+        if self.num_pulls == 0 {
+            return 0.0;
+        }
         self.reward / self.num_pulls as f64
     }
 }
@@ -124,4 +127,34 @@ mod tests {
         assert_eq!(arm1, arm2);
         assert_ne!(arm1, arm3);
     }
+
+    #[test]
+    fn test_initial_reward_is_zero() {
+        let arm = Arm::new(mock_opti_function, &vec![1, 2]);
+        assert_eq!(arm.get_mean_reward(), 0.0);
+    }
+
+    #[test]
+    fn test_mean_reward_with_zero_pulls() {
+        let arm = Arm::new(mock_opti_function, &vec![1, 2]);
+        assert_eq!(arm.get_mean_reward(), 0.0);
+    }
+
+    #[test]
+    fn test_clone_after_pulls() {
+        let mut arm = Arm::new(mock_opti_function, &vec![1, 2]);
+        arm.pull();
+        let cloned_arm = arm.clone();
+        assert_eq!(arm.get_num_pulls(), cloned_arm.get_num_pulls());
+        assert_eq!(arm.get_mean_reward(), cloned_arm.get_mean_reward());
+    }
+
+    #[test]
+    fn test_equality_with_different_states() {
+        let mut arm1 = Arm::new(mock_opti_function, &vec![1, 2]);
+        let arm2 = Arm::new(mock_opti_function, &vec![1, 2]);
+        arm1.pull();
+        assert_eq!(arm1, arm2);
+    }
+
 }
