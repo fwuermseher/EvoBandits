@@ -21,15 +21,15 @@ pub(crate) struct GeneticAlgorithm {
 
 impl GeneticAlgorithm {
     pub(crate) fn get_population_size(&self) -> usize {
-        return self.population_size;
+        self.population_size
     }
 
     pub(crate) fn get_individuals(&mut self) -> &mut Vec<Arm> {
-        return &mut self.individuals;
+        &mut self.individuals
     }
 
     pub(crate) fn get_simulations_used(&self) -> i32 {
-        return self.simulations_used;
+        self.simulations_used
     }
 
     pub(crate) fn update_simulations_used(&mut self, number_of_new_simulations: i32) {
@@ -37,7 +37,7 @@ impl GeneticAlgorithm {
     }
 
     pub(crate) fn budget_reached(&self) -> bool {
-        return self.simulations_used >= self.max_simulations;
+        self.simulations_used >= self.max_simulations
     }
 
     pub(crate) fn new(
@@ -50,17 +50,17 @@ impl GeneticAlgorithm {
         dimension: usize,
         lower_bound: Vec<i32>,
         upper_bound: Vec<i32>,
-    ) -> GeneticAlgorithm {
+    ) -> Self {
         let mut individuals: Vec<Arm> = Vec::new();
         let mut init_solutions: Vec<Vec<i32>> = Vec::new();
 
         for _ in 0..population_size {
-            let action_vector = GeneticAlgorithm::generate_unique_solution(&init_solutions, &lower_bound, &upper_bound, dimension);
+            let action_vector = Self::generate_unique_solution(&init_solutions, &lower_bound, &upper_bound, dimension);
             init_solutions.push(action_vector.clone());
             individuals.push(Arm::new(opti_function, &action_vector));
         }
 
-        GeneticAlgorithm {
+        Self {
             mutation_rate,
             crossover_rate,
             mutation_span,
@@ -101,9 +101,9 @@ impl GeneticAlgorithm {
 
     pub(crate) fn crossover(&self) -> Vec<Arm> {
         let mut crossover_pop: Vec<Arm> = Vec::new();
-        let m = self.get_population_size();
+        let population_size = self.get_population_size();
 
-        for i in (0..m).step_by(2) {
+        for i in (0..population_size).step_by(2) {
             if rand::random::<f64>() < self.crossover_rate {
                 // Crossover
                 let max_dim_index = self.dimension - 1;
@@ -111,21 +111,11 @@ impl GeneticAlgorithm {
 
                 for j in 1..=max_dim_index {
                     if swap_rv == j {
-                        let mut cross_vec_1: Vec<i32> = Vec::new();
-                        let mut cross_vec_2: Vec<i32> = Vec::new();
+                        let mut cross_vec_1: Vec<i32> = self.individuals[i].get_action_vector()[0..j].to_vec();
+                        cross_vec_1.extend_from_slice(&self.individuals[i + 1].get_action_vector()[j..=max_dim_index]);
 
-                        for h in 0..j {
-                            cross_vec_1.push(self.individuals[i].get_action_vector()[h]);
-                        }
-                        for h in j..=max_dim_index {
-                            cross_vec_1.push(self.individuals[i + 1].get_action_vector()[h]);
-                        }
-                        for h in 0..j {
-                            cross_vec_2.push(self.individuals[i + 1].get_action_vector()[h]);
-                        }
-                        for h in j..=max_dim_index {
-                            cross_vec_2.push(self.individuals[i].get_action_vector()[h]);
-                        }
+                        let mut cross_vec_2: Vec<i32> = self.individuals[i + 1].get_action_vector()[0..j].to_vec();
+                        cross_vec_2.extend_from_slice(&self.individuals[i].get_action_vector()[j..=max_dim_index]);
 
                         let new_individual_1 = Arm::new(self.opti_function, &cross_vec_1);
                         let new_individual_2 = Arm::new(self.opti_function, &cross_vec_2);
