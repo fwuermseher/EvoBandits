@@ -1,3 +1,5 @@
+use std::hash::{Hash, Hasher};
+
 #[derive(Debug)]
 pub(crate) struct Arm {
     action_vector: Vec<i32>,
@@ -7,8 +9,8 @@ pub(crate) struct Arm {
 }
 
 impl Arm {
-    pub(crate) fn new(arm_fn: fn(&[i32]) -> f64, action_vector: &[i32]) -> Arm {
-        Arm {
+    pub(crate) fn new(arm_fn: fn(&[i32]) -> f64, action_vector: &[i32]) -> Self {
+        Self {
             reward: 0.0,
             num_pulls: 0,
             arm_fn,
@@ -22,25 +24,24 @@ impl Arm {
         self.reward += g;
         self.num_pulls += 1;
 
-        return g;
+        g
     }
 
     pub(crate) fn get_num_pulls(&self) -> i32 {
-        return self.num_pulls;
+        self.num_pulls
     }
 
     pub(crate) fn get_function_value(&self) -> f64 {
-        return (self.arm_fn)(&self.action_vector);
+        (self.arm_fn)(&self.action_vector)
     }
 
     pub(crate) fn get_action_vector(&self) -> &[i32] {
-        return &self.action_vector;
+        &self.action_vector
     }
 
     pub(crate) fn get_mean_reward(&self) -> f64 {
-        return self.reward / self.num_pulls as f64;
+        self.reward / self.num_pulls as f64
     }
-
 }
 
 impl Clone for Arm {
@@ -53,8 +54,6 @@ impl Clone for Arm {
         }
     }
 }
-
-use std::hash::{Hash, Hasher};
 
 impl PartialEq for Arm {
     fn eq(&self, other: &Self) -> bool {
@@ -125,5 +124,4 @@ mod tests {
         assert_eq!(arm1, arm2);
         assert_ne!(arm1, arm3);
     }
-
 }
