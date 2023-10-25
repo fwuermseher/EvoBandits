@@ -1303,14 +1303,19 @@ fn inventory(action_vector: &[i32]) -> f64 {
         + noise_level as f64 * (costs - get_true_objective_value(&action_vector))
 }
 
+use std::time::Instant;
+
 fn main() {
     let num_runs = 100;
     let mut total_value = 0.0;
+    let mut total_time = 0.0; // To keep track of the total time
 
     for i in 0..num_runs {
+        let start_time = Instant::now(); // Record the start time
+
         let mut genetic_multi_armed_bandit = Gmab::new(
             inventory,
-            100,
+            20,
             0.25,
             1.0,
             0.1,
@@ -1321,17 +1326,24 @@ fn main() {
         );
         let result = genetic_multi_armed_bandit.optimize(false);
 
+        let elapsed_time = start_time.elapsed().as_secs_f64(); // Record the elapsed time
+        total_time += elapsed_time; // Add the elapsed time to the total
+
         let true_objective_value = get_true_objective_value(&result);
         total_value += true_objective_value;
 
-        // Print the counter and the true objective value every 10 runs
+        // Print the counter, the true objective value, and the time for every 10 runs
         if (i + 1) % 10 == 0 {
-            println!("Run {}: True Objective Value for This Run: {}", i + 1, true_objective_value);
+            println!("Run {}: True Objective Value for This Run: {}, Time: {}s", i + 1, true_objective_value, elapsed_time);
         }
     }
 
     let average_value = total_value / num_runs as f64;
+    let average_time = total_time / num_runs as f64; // Calculate the average time
+
     println!("Average Objective Value: {}", average_value);
+    println!("Average Time: {}s", average_time); // Print the average time
 }
+
 
 
