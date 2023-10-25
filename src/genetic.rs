@@ -150,9 +150,11 @@ impl GeneticAlgorithm {
         let mut rng = rand::thread_rng();
 
         for individual in population.iter() {
-            let new_action_vector = individual.get_action_vector().clone();
 
-            for (i, value) in new_action_vector.to_vec().iter_mut().enumerate() {
+            // Clone the action vector
+            let mut new_action_vector = individual.get_action_vector().to_vec();  // Here I assumed `get_action_vector` returns a slice or Vec
+
+            for (i, value) in new_action_vector.iter_mut().enumerate() {
                 if rng.gen::<f64>() < self.mutation_rate {
                     let adjustment = Normal::new(0.0, self.mutation_span * (self.upper_bound[i] - self.lower_bound[i]) as f64)
                         .unwrap()
@@ -164,7 +166,8 @@ impl GeneticAlgorithm {
                 }
             }
 
-            let new_individual = Arm::new(individual.arm_fn, new_action_vector);
+
+            let new_individual = Arm::new(individual.arm_fn, new_action_vector.as_slice());
 
             if seen.insert(new_individual.clone()) {
                 mutated_population.push(new_individual);
