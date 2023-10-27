@@ -1,15 +1,19 @@
 use std::hash::{Hash, Hasher};
 
+pub(crate) trait OptimizationFn {
+    fn call(&self, vec: &[i32]) -> f64;
+}
+
 #[derive(Debug)]
-pub(crate) struct Arm {
+pub(crate) struct Arm<F: OptimizationFn> {
     action_vector: Vec<i32>,
     reward: f64,
     num_pulls: i32,
-    pub(crate) arm_fn: fn(&[i32]) -> f64,
+    pub(crate) arm_fn: F,
 }
 
-impl Arm {
-    pub(crate) fn new(arm_fn: fn(&[i32]) -> f64, action_vector: &[i32]) -> Self {
+impl<F: OptimizationFn> Arm<F> {
+    pub(crate) fn new(arm_fn: F, action_vector: &[i32]) -> Self {
         Self {
             reward: 0.0,
             num_pulls: 0,
@@ -19,7 +23,7 @@ impl Arm {
     }
 
     pub(crate) fn pull(&mut self) -> f64 {
-        let g = (self.arm_fn)(&self.action_vector);
+        let g = self.arm_fn.call(&self.action_vector);
 
         self.reward += g;
         self.num_pulls += 1;
@@ -32,7 +36,7 @@ impl Arm {
     }
 
     pub(crate) fn get_function_value(&self) -> f64 {
-        (self.arm_fn)(&self.action_vector)
+        self.arm_fn.call(&self.action_vector)
     }
 
     pub(crate) fn get_action_vector(&self) -> &[i32] {
@@ -47,28 +51,29 @@ impl Arm {
     }
 }
 
-impl Clone for Arm {
+impl<F: OptimizationFn> Clone for Arm<F> where F: Clone {
     fn clone(&self) -> Self {
         Self {
             action_vector: self.action_vector.clone(),
             reward: self.reward,
             num_pulls: self.num_pulls,
-            arm_fn: self.arm_fn,
+            arm_fn: self.arm_fn.clone(),
         }
     }
 }
 
-impl PartialEq for Arm {
+impl<F: OptimizationFn + PartialEq> PartialEq for Arm<F> {
     fn eq(&self, other: &Self) -> bool {
-        self.action_vector == other.action_vector
+        self.action_vector == other.action_vector && self.arm_fn == other.arm_fn
     }
 }
 
-impl Eq for Arm {}
+impl<F: OptimizationFn + Eq> Eq for Arm<F> {}
 
-impl Hash for Arm {
+impl<F: OptimizationFn + Hash> Hash for Arm<F> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.action_vector.hash(state);
+        self.arm_fn.hash(state);
     }
 }
 
