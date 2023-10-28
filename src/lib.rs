@@ -6,6 +6,7 @@ use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap};
 use arm::Arm;
 use genetic::GeneticAlgorithm;
+use crate::arm::OptimizationFn;
 
 #[derive(Debug, PartialEq, PartialOrd, Clone, Copy)]
 struct FloatKey(f64);
@@ -52,16 +53,17 @@ impl<K: Ord, V: PartialEq> SortedMultiMap<K, V> {
     }
 }
 
-pub struct Gmab {
+pub struct Gmab<F: OptimizationFn> {
     sample_average_tree: SortedMultiMap<FloatKey, i32>,
-    arm_memory: Vec<Arm>,
+    arm_memory: Vec<Arm<F>>,
     lookup_tabel: HashMap<Vec<i32>, i32>,
-    genetic_algorithm: GeneticAlgorithm,
+    genetic_algorithm: GeneticAlgorithm<F>,
     current_indexes: Vec<i32>,
 }
 
-impl Gmab {
-    fn get_arm_index(&self, individual: &Arm) -> i32 {
+
+impl<F: OptimizationFn + Clone> Gmab<F> {
+    fn get_arm_index(&self, individual: &Arm<F>) -> i32 {
         match self.lookup_tabel.get(&individual.get_action_vector().to_vec()) {
             Some(&index) => index,
             None => -1,
@@ -69,7 +71,7 @@ impl Gmab {
     }
 
     pub fn new(
-        opti_function: fn(&[i32]) -> f64,
+        opti_function: F,
         population_size: usize,
         mutation_rate: f64,
         crossover_rate: f64,
@@ -77,7 +79,7 @@ impl Gmab {
         max_simulations: i32,
         dimension: usize,
         lower_bound: Vec<i32>,
-        upper_bound: Vec<i32>, ) -> Gmab {
+        upper_bound: Vec<i32>, ) -> Gmab<F> {
         let mut genetic_algorithm = GeneticAlgorithm::new(
             opti_function,
             population_size,
@@ -90,7 +92,7 @@ impl Gmab {
             upper_bound,
         );
 
-        let mut arm_memory: Vec<Arm> = Vec::new();
+        let mut arm_memory: Vec<Arm<F>> = Vec::new();
         let mut lookup_tabel: HashMap<Vec<i32>, i32> = HashMap::new();
         let mut sample_average_tree: SortedMultiMap<FloatKey, i32> = SortedMultiMap::new();
 
@@ -168,7 +170,7 @@ impl Gmab {
         best_arm_index
     }
 
-    fn sample_and_update(&mut self, arm_index: i32, mut individual: Arm) {
+    fn sample_and_update(&mut self, arm_index: i32, mut individual: Arm<F>) {
         if arm_index >= 0 {
             self.sample_average_tree.delete(&FloatKey(self.arm_memory[arm_index as usize].get_mean_reward()), &arm_index);
             self.arm_memory[arm_index as usize].pull();
