@@ -6,6 +6,7 @@ use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap};
 use arm::Arm;
 use genetic::GeneticAlgorithm;
+use crate::arm::OptimizationFn;
 
 #[derive(Debug, PartialEq, PartialOrd, Clone, Copy)]
 struct FloatKey(f64);
@@ -52,23 +53,16 @@ impl<K: Ord, V: PartialEq> SortedMultiMap<K, V> {
     }
 }
 
-pub struct Gmab {
+pub struct Gmab<F: OptimizationFn> {
     sample_average_tree: SortedMultiMap<FloatKey, i32>,
-    arm_memory: Vec<Arm>,
+    arm_memory: Vec<Arm<F>>,
     lookup_tabel: HashMap<Vec<i32>, i32>,
-    genetic_algorithm: GeneticAlgorithm,
+    genetic_algorithm: GeneticAlgorithm<F>,
     current_indexes: Vec<i32>,
 }
 
-impl Gmab {
-    fn get_arm_index(&self, individual: &Arm) -> i32 {
-        match self.lookup_tabel.get(&individual.get_action_vector().to_vec()) {
-            Some(&index) => index,
-            None => -1,
-        }
-    }
-
-    pub fn new(
+impl Gmab<fn(&[i32]) -> f64> {
+    pub fn new_with_fn_pointer(
         opti_function: fn(&[i32]) -> f64,
         population_size: usize,
         mutation_rate: f64,
@@ -77,7 +71,8 @@ impl Gmab {
         max_simulations: i32,
         dimension: usize,
         lower_bound: Vec<i32>,
-        upper_bound: Vec<i32>, ) -> Gmab {
+        upper_bound: Vec<i32>,
+    ) -> Gmab<fn(&[i32]) -> f64> {
         let mut genetic_algorithm = GeneticAlgorithm::new(
             opti_function,
             population_size,
@@ -90,7 +85,59 @@ impl Gmab {
             upper_bound,
         );
 
-        let mut arm_memory: Vec<Arm> = Vec::new();
+        let mut arm_memory: Vec<Arm<fn(&[i32]) -> f64>> = Vec::new();
+        let mut lookup_tabel: HashMap<Vec<i32>, i32> = HashMap::new();
+        let mut sample_average_tree: SortedMultiMap<FloatKey, i32> = SortedMultiMap::new();
+
+        for (index, individual) in genetic_algorithm.get_individuals().iter_mut().enumerate() {
+            individual.pull();
+            arm_memory.push(individual.clone());
+            lookup_tabel.insert(individual.get_action_vector().to_vec(), index as i32);
+            sample_average_tree.insert(FloatKey(individual.get_mean_reward()), index as i32);
+        }
+
+        Gmab {
+            sample_average_tree,
+            arm_memory,
+            lookup_tabel,
+            genetic_algorithm,
+            current_indexes: Vec::new(),
+        }
+    }
+}
+
+
+impl<F: OptimizationFn + Clone> Gmab<F> {
+    fn get_arm_index(&self, individual: &Arm<F>) -> i32 {
+        match self.lookup_tabel.get(&individual.get_action_vector().to_vec()) {
+            Some(&index) => index,
+            None => -1,
+        }
+    }
+
+    pub fn new(
+        opti_function: F,
+        population_size: usize,
+        mutation_rate: f64,
+        crossover_rate: f64,
+        mutation_span: f64,
+        max_simulations: i32,
+        dimension: usize,
+        lower_bound: Vec<i32>,
+        upper_bound: Vec<i32>, ) -> Gmab<F> {
+        let mut genetic_algorithm = GeneticAlgorithm::new(
+            opti_function,
+            population_size,
+            mutation_rate,
+            crossover_rate,
+            mutation_span,
+            max_simulations,
+            dimension,
+            lower_bound,
+            upper_bound,
+        );
+
+        let mut arm_memory: Vec<Arm<F>> = Vec::new();
         let mut lookup_tabel: HashMap<Vec<i32>, i32> = HashMap::new();
         let mut sample_average_tree: SortedMultiMap<FloatKey, i32> = SortedMultiMap::new();
 
@@ -168,7 +215,7 @@ impl Gmab {
         best_arm_index
     }
 
-    fn sample_and_update(&mut self, arm_index: i32, mut individual: Arm) {
+    fn sample_and_update(&mut self, arm_index: i32, mut individual: Arm<F>) {
         if arm_index >= 0 {
             self.sample_average_tree.delete(&FloatKey(self.arm_memory[arm_index as usize].get_mean_reward()), &arm_index);
             self.arm_memory[arm_index as usize].pull();

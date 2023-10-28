@@ -1313,7 +1313,7 @@ fn main() {
     for i in 0..num_runs {
         let start_time = Instant::now(); // Record the start time
 
-        let mut genetic_multi_armed_bandit = Gmab::new(
+        let mut genetic_multi_armed_bandit = Gmab::new_with_fn_pointer(
             inventory,
             20,
             0.25,

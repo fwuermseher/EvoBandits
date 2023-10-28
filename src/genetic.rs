@@ -1,17 +1,17 @@
 use std::collections::HashSet;
-use crate::arm::Arm;
+use crate::arm::{Arm, OptimizationFn};
 use rand_distr::{Normal, Distribution};
 use rand::Rng;
 use rand::seq::SliceRandom;
 
 
-pub(crate) struct GeneticAlgorithm {
+pub(crate) struct GeneticAlgorithm<F: OptimizationFn> {
     mutation_rate: f64,
     crossover_rate: f64,
     mutation_span: f64,
     population_size: usize,
-    individuals: Vec<Arm>,
-    pub(crate) opti_function: fn(&[i32]) -> f64,
+    individuals: Vec<Arm<F>>,
+    pub(crate) opti_function: F,
     max_simulations: i32,
     dimension: usize,
     lower_bound: Vec<i32>,
@@ -19,12 +19,12 @@ pub(crate) struct GeneticAlgorithm {
     simulations_used: i32,
 }
 
-impl GeneticAlgorithm {
+impl<F: OptimizationFn + Clone> GeneticAlgorithm<F> {
     pub(crate) fn get_population_size(&self) -> usize {
         self.population_size
     }
 
-    pub(crate) fn get_individuals(&mut self) -> &mut Vec<Arm> {
+    pub(crate) fn get_individuals(&mut self) -> &mut Vec<Arm<F>> {
         &mut self.individuals
     }
 
@@ -41,7 +41,7 @@ impl GeneticAlgorithm {
     }
 
     pub(crate) fn new(
-        opti_function: fn(&[i32]) -> f64,
+        opti_function: F,
         population_size: usize,
         mutation_rate: f64,
         crossover_rate: f64,
@@ -51,13 +51,13 @@ impl GeneticAlgorithm {
         lower_bound: Vec<i32>,
         upper_bound: Vec<i32>,
     ) -> Self {
-        let mut individuals: Vec<Arm> = Vec::new();
+        let mut individuals: Vec<Arm<F>> = Vec::new();
         let mut init_solutions: Vec<Vec<i32>> = Vec::new();
 
         for _ in 0..population_size {
             let action_vector = Self::generate_unique_solution(&init_solutions, &lower_bound, &upper_bound, dimension);
             init_solutions.push(action_vector.clone());
-            individuals.push(Arm::new(opti_function, &action_vector));
+            individuals.push(Arm::new(opti_function.clone(), &action_vector));
         }
 
         Self {
@@ -99,8 +99,8 @@ impl GeneticAlgorithm {
         self.individuals.shuffle(&mut rng);
     }
 
-    pub(crate) fn crossover(&self) -> Vec<Arm> {
-        let mut crossover_pop: Vec<Arm> = Vec::new();
+    pub(crate) fn crossover(&self) -> Vec<Arm<F>> {
+        let mut crossover_pop: Vec<Arm<F>> = Vec::new();
         let population_size = self.get_population_size();
 
         for i in (0..population_size).step_by(2) {
@@ -117,8 +117,8 @@ impl GeneticAlgorithm {
                         let mut cross_vec_2: Vec<i32> = self.individuals[i + 1].get_action_vector()[0..j].to_vec();
                         cross_vec_2.extend_from_slice(&self.individuals[i].get_action_vector()[j..=max_dim_index]);
 
-                        let new_individual_1 = Arm::new(self.opti_function, &cross_vec_1);
-                        let new_individual_2 = Arm::new(self.opti_function, &cross_vec_2);
+                        let new_individual_1 = Arm::new(self.opti_function.clone(), &cross_vec_1);
+                        let new_individual_2 = Arm::new(self.opti_function.clone(), &cross_vec_2);
 
                         crossover_pop.push(new_individual_1);
                         crossover_pop.push(new_individual_2);
@@ -134,7 +134,7 @@ impl GeneticAlgorithm {
         crossover_pop
     }
 
-    pub(crate) fn mutate(&self, population: &[Arm]) -> Vec<Arm> {
+    pub(crate) fn mutate(&self, population: &[Arm<F>]) -> Vec<Arm<F>> {
         let mut mutated_population = Vec::new();
         let mut seen = HashSet::new();
         let mut rng = rand::thread_rng();
@@ -157,7 +157,7 @@ impl GeneticAlgorithm {
             }
 
 
-            let new_individual = Arm::new(individual.arm_fn, new_action_vector.as_slice());
+            let new_individual = Arm::new(individual.arm_fn.clone(), new_action_vector.as_slice());
 
             if seen.insert(new_individual.clone()) {
                 mutated_population.push(new_individual);

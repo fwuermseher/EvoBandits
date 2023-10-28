@@ -1,15 +1,25 @@
 use std::hash::{Hash, Hasher};
 
+pub trait OptimizationFn {
+    fn evaluate(&self, action_vector: &[i32]) -> f64;
+}
+
+impl<F: Fn(&[i32]) -> f64> OptimizationFn for F {
+    fn evaluate(&self, action_vector: &[i32]) -> f64 {
+        self(action_vector)
+    }
+}
+
 #[derive(Debug)]
-pub(crate) struct Arm {
+pub(crate) struct Arm<F: OptimizationFn> {
     action_vector: Vec<i32>,
     reward: f64,
     num_pulls: i32,
-    pub(crate) arm_fn: fn(&[i32]) -> f64,
+    pub(crate) arm_fn: F,
 }
 
-impl Arm {
-    pub(crate) fn new(arm_fn: fn(&[i32]) -> f64, action_vector: &[i32]) -> Self {
+impl<F: OptimizationFn> Arm<F> {
+    pub(crate) fn new(arm_fn: F, action_vector: &[i32]) -> Self {
         Self {
             reward: 0.0,
             num_pulls: 0,
@@ -19,7 +29,7 @@ impl Arm {
     }
 
     pub(crate) fn pull(&mut self) -> f64 {
-        let g = (self.arm_fn)(&self.action_vector);
+        let g = self.arm_fn.evaluate(&self.action_vector);
 
         self.reward += g;
         self.num_pulls += 1;
@@ -32,7 +42,7 @@ impl Arm {
     }
 
     pub(crate) fn get_function_value(&self) -> f64 {
-        (self.arm_fn)(&self.action_vector)
+        self.arm_fn.evaluate(&self.action_vector)
     }
 
     pub(crate) fn get_action_vector(&self) -> &[i32] {
@@ -47,26 +57,26 @@ impl Arm {
     }
 }
 
-impl Clone for Arm {
+impl<F: OptimizationFn + Clone> Clone for Arm<F> {
     fn clone(&self) -> Self {
         Self {
             action_vector: self.action_vector.clone(),
             reward: self.reward,
             num_pulls: self.num_pulls,
-            arm_fn: self.arm_fn,
+            arm_fn: self.arm_fn.clone(),
         }
     }
 }
 
-impl PartialEq for Arm {
+impl<F: OptimizationFn> PartialEq for Arm<F> {
     fn eq(&self, other: &Self) -> bool {
         self.action_vector == other.action_vector
     }
 }
 
-impl Eq for Arm {}
+impl<F: OptimizationFn> Eq for Arm<F> {}
 
-impl Hash for Arm {
+impl<F: OptimizationFn> Hash for Arm<F> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.action_vector.hash(state);
     }
