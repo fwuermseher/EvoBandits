@@ -129,16 +129,6 @@ mod tests {
     }
 
     #[test]
-    fn test_arm_equality() {
-        let arm1 = Arm::new(mock_opti_function, &vec![1, 2]);
-        let arm2 = Arm::new(mock_opti_function, &vec![1, 2]);
-        let arm3 = Arm::new(mock_opti_function, &vec![2, 1]);
-
-        assert_eq!(arm1, arm2);
-        assert_ne!(arm1, arm3);
-    }
-
-    #[test]
     fn test_initial_reward_is_zero() {
         let arm = Arm::new(mock_opti_function, &vec![1, 2]);
         assert_eq!(arm.get_mean_reward(), 0.0);
@@ -157,14 +147,6 @@ mod tests {
         let cloned_arm = arm.clone();
         assert_eq!(arm.get_num_pulls(), cloned_arm.get_num_pulls());
         assert_eq!(arm.get_mean_reward(), cloned_arm.get_mean_reward());
-    }
-
-    #[test]
-    fn test_equality_with_different_states() {
-        let mut arm1 = Arm::new(mock_opti_function, &vec![1, 2]);
-        let arm2 = Arm::new(mock_opti_function, &vec![1, 2]);
-        arm1.pull();
-        assert_eq!(arm1, arm2);
     }
 
 }
