@@ -1,6 +1,5 @@
 use std::collections::HashSet;
 
-use rand::seq::SliceRandom;
 use rand::Rng;
 use rand_distr::{Distribution, Normal};
 
@@ -10,37 +9,16 @@ pub(crate) struct GeneticAlgorithm<F: OptimizationFn> {
     mutation_rate: f64,
     crossover_rate: f64,
     mutation_span: f64,
-    population_size: usize,
-    individuals: Vec<Arm<F>>,
+    pub(crate) population_size: usize,
     pub(crate) opti_function: F,
     max_simulations: i32,
     dimension: usize,
     lower_bound: Vec<i32>,
     upper_bound: Vec<i32>,
-    simulations_used: i32,
+    pub(crate) simulations_used: i32,
 }
 
 impl<F: OptimizationFn + Clone> GeneticAlgorithm<F> {
-    pub(crate) fn get_population_size(&self) -> usize {
-        self.population_size
-    }
-
-    pub(crate) fn get_individuals(&mut self) -> &mut Vec<Arm<F>> {
-        &mut self.individuals
-    }
-
-    pub(crate) fn get_simulations_used(&self) -> i32 {
-        self.simulations_used
-    }
-
-    pub(crate) fn update_simulations_used(&mut self, number_of_new_simulations: i32) {
-        self.simulations_used += number_of_new_simulations;
-    }
-
-    pub(crate) fn budget_reached(&self) -> bool {
-        self.simulations_used >= self.max_simulations
-    }
-
     pub(crate) fn new(
         opti_function: F,
         population_size: usize,
@@ -52,26 +30,11 @@ impl<F: OptimizationFn + Clone> GeneticAlgorithm<F> {
         lower_bound: Vec<i32>,
         upper_bound: Vec<i32>,
     ) -> Self {
-        let mut individuals: Vec<Arm<F>> = Vec::new();
-        let mut init_solutions: Vec<Vec<i32>> = Vec::new();
-
-        for _ in 0..population_size {
-            let action_vector = Self::generate_unique_solution(
-                &init_solutions,
-                &lower_bound,
-                &upper_bound,
-                dimension,
-            );
-            init_solutions.push(action_vector.clone());
-            individuals.push(Arm::new(opti_function.clone(), &action_vector));
-        }
-
         Self {
             mutation_rate,
             crossover_rate,
             mutation_span,
             population_size,
-            individuals,
             opti_function,
             max_simulations,
             dimension,
@@ -81,56 +44,59 @@ impl<F: OptimizationFn + Clone> GeneticAlgorithm<F> {
         }
     }
 
-    fn generate_unique_solution(
-        existing_solutions: &[Vec<i32>],
-        lower_bound: &[i32],
-        upper_bound: &[i32],
-        dimension: usize,
-    ) -> Vec<i32> {
+    pub(crate) fn update_simulations_used(&mut self, number_of_new_simulations: i32) {
+        self.simulations_used += number_of_new_simulations;
+    }
+
+    pub(crate) fn budget_reached(&self) -> bool {
+        self.simulations_used >= self.max_simulations
+    }
+
+    pub(crate) fn generate_new_population(&self) -> Vec<Arm> {
+        let mut individuals: Vec<Arm> = Vec::new();
         let mut rng = rand::thread_rng();
 
-        loop {
-            let candidate_solution: Vec<i32> = (0..dimension)
-                .map(|j| rng.gen_range(lower_bound[j]..=upper_bound[j]))
+        while individuals.len() < self.population_size {
+            let candidate_solution: Vec<i32> = (0..self.dimension)
+                .map(|j| rng.gen_range(self.lower_bound[j]..=self.upper_bound[j]))
                 .collect();
 
-            if !existing_solutions.contains(&candidate_solution) {
-                return candidate_solution;
+            let candidate_arm = Arm::new(&candidate_solution);
+
+            if !individuals.contains(&candidate_arm) {
+                individuals.push(candidate_arm);
             }
         }
+        individuals
     }
 
-    pub(crate) fn shuffle_population(&mut self) {
+    pub(crate) fn crossover(&self, population: &[Arm]) -> Vec<Arm> {
+        let mut crossover_pop: Vec<Arm> = Vec::new();
+        let population_size = self.population_size;
         let mut rng = rand::thread_rng();
-        self.individuals.shuffle(&mut rng);
-    }
-
-    pub(crate) fn crossover(&self) -> Vec<Arm<F>> {
-        let mut crossover_pop: Vec<Arm<F>> = Vec::new();
-        let population_size = self.get_population_size();
 
         for i in (0..population_size).step_by(2) {
             if rand::random::<f64>() < self.crossover_rate {
                 // Crossover
                 let max_dim_index = self.dimension - 1;
-                let swap_rv = rand::random::<usize>() % max_dim_index + 1;
+                let swap_rv = rng.gen_range(1..=max_dim_index);
 
                 for j in 1..=max_dim_index {
                     if swap_rv == j {
                         let mut cross_vec_1: Vec<i32> =
-                            self.individuals[i].get_action_vector()[0..j].to_vec();
+                            population[i].get_action_vector()[0..j].to_vec();
                         cross_vec_1.extend_from_slice(
-                            &self.individuals[i + 1].get_action_vector()[j..=max_dim_index],
+                            &population[i + 1].get_action_vector()[j..=max_dim_index],
                         );
 
                         let mut cross_vec_2: Vec<i32> =
-                            self.individuals[i + 1].get_action_vector()[0..j].to_vec();
+                            population[i + 1].get_action_vector()[0..j].to_vec();
                         cross_vec_2.extend_from_slice(
-                            &self.individuals[i].get_action_vector()[j..=max_dim_index],
+                            &population[i].get_action_vector()[j..=max_dim_index],
                         );
 
-                        let new_individual_1 = Arm::new(self.opti_function.clone(), &cross_vec_1);
-                        let new_individual_2 = Arm::new(self.opti_function.clone(), &cross_vec_2);
+                        let new_individual_1 = Arm::new(&cross_vec_1);
+                        let new_individual_2 = Arm::new(&cross_vec_2);
 
                         crossover_pop.push(new_individual_1);
                         crossover_pop.push(new_individual_2);
@@ -138,15 +104,15 @@ impl<F: OptimizationFn + Clone> GeneticAlgorithm<F> {
                 }
             } else {
                 // No Crossover
-                crossover_pop.push(self.individuals[i].clone()); // Assuming your Arm struct implements the Clone trait
-                crossover_pop.push(self.individuals[i + 1].clone()); // Assuming your Arm struct implements the Clone trait
+                crossover_pop.push(population[i].clone());
+                crossover_pop.push(population[i + 1].clone());
             }
         }
 
         crossover_pop
     }
 
-    pub(crate) fn mutate(&self, population: &[Arm<F>]) -> Vec<Arm<F>> {
+    pub(crate) fn mutate(&self, population: &[Arm]) -> Vec<Arm> {
         let mut mutated_population = Vec::new();
         let mut seen = HashSet::new();
         let mut rng = rand::thread_rng();
@@ -170,7 +136,7 @@ impl<F: OptimizationFn + Clone> GeneticAlgorithm<F> {
                 }
             }
 
-            let new_individual = Arm::new(individual.arm_fn.clone(), new_action_vector.as_slice());
+            let new_individual = Arm::new(new_action_vector.as_slice());
 
             if seen.insert(new_individual.clone()) {
                 mutated_population.push(new_individual);
@@ -203,23 +169,7 @@ mod tests {
             vec![0, 0],
             vec![10, 10],
         );
-        assert_eq!(ga.get_population_size(), 10);
-    }
-
-    #[test]
-    fn test_get_individuals() {
-        let mut ga = GeneticAlgorithm::new(
-            mock_opti_function,
-            10,
-            0.1,
-            0.9,
-            0.5,
-            100,
-            2,
-            vec![0, 0],
-            vec![10, 10],
-        );
-        assert_eq!(ga.get_individuals().len(), 10);
+        assert_eq!(ga.population_size, 10);
     }
 
     #[test]
@@ -235,7 +185,7 @@ mod tests {
             vec![0, 0],
             vec![10, 10],
         );
-        assert_eq!(ga.get_simulations_used(), 0);
+        assert_eq!(ga.simulations_used, 0);
     }
 
     #[test]
@@ -252,7 +202,7 @@ mod tests {
             vec![10, 10],
         );
         ga.update_simulations_used(5);
-        assert_eq!(ga.get_simulations_used(), 5);
+        assert_eq!(ga.simulations_used, 5);
     }
 
     #[test]
@@ -287,10 +237,7 @@ mod tests {
             vec![10, 10],
         );
 
-        let initial_population = vec![
-            Arm::new(mock_opti_function, &vec![1, 1]),
-            Arm::new(mock_opti_function, &vec![2, 2]),
-        ];
+        let initial_population = vec![Arm::new(&vec![1, 1]), Arm::new(&vec![2, 2])];
 
         let mutated_population = ga.mutate(&initial_population);
 
@@ -322,16 +269,21 @@ mod tests {
             vec![10, 10, 10, 10, 10, 10, 10, 10, 10, 10],
         );
 
-        let crossover_population = ga.crossover();
+        let initial_population = vec![
+            Arm::new(&vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
+            Arm::new(&vec![9, 8, 7, 6, 5, 4, 3, 2, 1, 0]),
+        ];
+
+        let crossover_population = ga.crossover(&initial_population);
 
         // Since the crossover rate is 100%, the two individuals should not be identical to the original individuals
         assert_ne!(
             crossover_population[0].get_action_vector(),
-            ga.individuals[0].get_action_vector()
+            initial_population[0].get_action_vector()
         );
         assert_ne!(
             crossover_population[1].get_action_vector(),
-            ga.individuals[1].get_action_vector()
+            initial_population[1].get_action_vector()
         );
     }
 }
