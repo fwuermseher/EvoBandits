@@ -38,7 +38,7 @@ fn main() {
 
 ## Contributing
 
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+Pull requests are welcome. For major changes, please open an issue first to discuss what you want to change.
 
 
 ## License
@@ -46,17 +46,12 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 tbd
 
 ## Credit 
-GMAB was developed by:
-
-- Deniz Preil
-- Timo Kühne
-- Jonathan Laib
-
+Deniz Preil wrote the initial GMAB code, which Timo Kühne and Jonathan Laib rewrote.
 
 ## Citing GMAB
 
 If you use GMAB in your research, please cite the following paper:
 
 ```
-PREIL, Deniz; KRAPP, Michael. Genetic multi-armed bandits: a reinforcement learning approach for discrete optimization via simulation. arXiv preprint arXiv:2302.07695, 2023.
+Preil, D., & Krapp, M. (2024). Genetic Multi-Armed Bandits: A Reinforcement Learning Inspired Approach for Simulation Optimization. IEEE Transactions on Evolutionary Computation.
 ```
