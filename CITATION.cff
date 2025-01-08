@@ -8,7 +8,17 @@ authors:
   given-names: "Michael"
   orcid: "https://orcid.org/0009-0001-3003-6747"
 title: "Genetic Multi-Armed Bandits: A Reinforcement Learning Inspired Approach for Simulation Optimization"
-journal: "IEEE Transactions on Evolutionary Computation"
-type: article
-year: 2024
+version: 0.1
 url: "https://github.com/TeamMoos/GMAB"
+preferred-citation:
+  type: article
+  authors:
+  - family-names: "Preil"
+    given-names: "Deniz"
+    orcid: "https://orcid.org/0000-0001-7928-7267"
+  - family-names: "Krapp"
+    given-names: "Michael"
+    orcid: "https://orcid.org/0009-0001-3003-6747"
+  journal: "IEEE Transactions on Evolutionary Computation"
+  title: "Genetic Multi-Armed Bandits: A Reinforcement Learning Inspired Approach for Simulation Optimization."
+  year: 2024
