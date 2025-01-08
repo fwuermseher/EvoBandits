@@ -7,8 +7,8 @@ authors:
 - family-names: "Krapp"
   given-names: "Michael"
   orcid: "https://orcid.org/0009-0001-3003-6747"
-title: "Genetic multi-armed bandits: a reinforcement learning approach for discrete optimization via simulation"
-version: 0.1.0
-doi: 10.48550/arXiv.2302.07695
-date-released: 2024-03-18
+title: "Genetic Multi-Armed Bandits: A Reinforcement Learning Inspired Approach for Simulation Optimization"
+journal: "IEEE Transactions on Evolutionary Computation"
+type: article
+year: 2024
 url: "https://github.com/TeamMoos/GMAB"
