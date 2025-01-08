@@ -15,7 +15,7 @@ To install GMAB, add the following to your Cargo.toml file:
 
 ```toml
 [dependencies]
-gmab = "0.1.0"
+gmab = { git = "https://github.com/E-MAB/G-MAB.git" }
 ```
 
 ```rust
@@ -45,7 +45,7 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 
 tbd
 
-## Credit 
+## Credit
 Deniz Preil wrote the initial GMAB code, which Timo Kühne and Jonathan Laib rewrote.
 
 ## Citing GMAB
