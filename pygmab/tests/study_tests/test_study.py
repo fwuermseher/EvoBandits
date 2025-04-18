@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 from gmab.study import Study
 
+from tests._functions import clustering as cl
 from tests._functions import rosenbrock as rb
 
 # ToDo: Add tests for output formats and properties
@@ -39,21 +40,22 @@ def test_study_init(seed, kwargs, caplog):
 
 
 @pytest.mark.parametrize(
-    "func, params, trials, exp_bounds, exp_result, kwargs",
+    "func, params, trials, exp_bounds, kwargs",
     [
-        [rb.function, rb.PARAMS_2D, 100, rb.BOUNDS_2D, rb.RESULTS_2D, {}],
+        [rb.function, rb.PARAMS_2D, 1, rb.BOUNDS_2D, {}],
+        [cl.function, cl.PARAMS, 1, cl.BOUNDS, {}],
     ],
     ids=[
-        "base",
+        "try_rosenbrock",  # Simple case with one integer parameter
+        "try_clustering",  # Case with multiple parameters and various types
         # ToDo: Input validation: Fail if func is not callable
         # ToDo: Input validation: Fail if params is not valid
         # ToDo: Input validation: Fail if trials is not positive integer
     ],
 )
-def test_study_optimize(func, params, trials, exp_bounds, exp_result, kwargs):
+def test_study_optimize(func, params, trials, exp_bounds, kwargs):
     # Mock GMAB Algorithm
     mock = MagicMock()
-    mock.optimize.return_value = exp_result
 
     expectation = kwargs.pop("exp", nullcontext())
     with expectation:
