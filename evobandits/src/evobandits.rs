@@ -6,6 +6,7 @@ use rand::rngs::StdRng;
 use rand::{RngCore, SeedableRng};
 use std::collections::HashMap;
 
+#[derive(Debug, PartialEq)]
 pub struct EvoBandits {
     sample_average_tree: SortedMultiMap<FloatKey, i32>,
     arm_memory: Vec<Arm>,
@@ -433,19 +434,23 @@ mod tests {
 
     #[test]
     fn test_reproduction_with_seeding() {
+        // Mock the optimization function
+        fn mock_opti_function(vec: &[i32]) -> f64 {
+            vec.iter().map(|&x| x as f64).sum()
+        }
+        
         // Helper function that generates a evobandits result based on a specific seed.
         fn generate_result(seed: Option<u64>) -> Vec<i32> {
             let bounds = vec![(1, 100), (1, 100)];
             let mut evobandits = EvoBandits::new(Default::default());
-            let result = evobandits.optimize(mock_opti_function, bounds, 100, seed);
-            return result;
+            return evobandits.optimize(mock_opti_function, bounds, 100, seed);
         }
 
         // The same seed should lead to the same result
         let seed = 42;
         assert_eq!(generate_result(Some(seed)), generate_result(Some(seed)));
 
-        // A different seed should not lead to the same population
+        // A different seed should not lead to the same result
         assert_ne!(generate_result(Some(seed)), generate_result(Some(seed + 1)));
     }
 
