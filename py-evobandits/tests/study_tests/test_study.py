@@ -57,17 +57,22 @@ def test_study_init(seed, kwargs, exp_algorithm, caplog):
             1,
             {"mock_opt_return": cl.RESULTS_EXAMPLE, "mock_best_trial": cl.BEST_TRIAL_EXAMPLE},
         ],
+        [rb.function, rb.PARAMS_2D, 1, {"maximize": True}],
+        [rb.function, rb.PARAMS_2D, 1, {"maximize": "False", "exp": pytest.raises(TypeError)}],
     ],
     ids=[
         "valid_default_testcase",
         "valid_clustering_testcase",
+        "default_with_maximize",
+        "invalid_maximize_type",
     ],
 )
 def test_optimize(objective, params, trials, kwargs):
     # Mock dependencies
     # Per default, and expected results from the rosenbrock testcase are used to mock EvoBandits.
     mock_algorithm = MagicMock()
-    mock_algorithm.optimize.return_value = kwargs.get("mock_opt_return", rb.RESULTS_2D)
+    mock_algorithm.optimize.return_value = kwargs.pop("mock_opt_return", rb.RESULTS_2D)
+    mock_best_trial = kwargs.pop("mock_best_trial", rb.BEST_TRIAL_2D)
     study = Study(seed=42, algorithm=mock_algorithm)  # seeding to avoid warning log
 
     # Extract expected exceptions
@@ -75,6 +80,6 @@ def test_optimize(objective, params, trials, kwargs):
 
     # Optimize a study and verify results
     with expectation:
-        best_trial = study.optimize(objective, params, trials)
-        assert best_trial == kwargs.get("mock_best_trial", rb.BEST_TRIAL_2D)
+        best_trial = study.optimize(objective, params, trials, **kwargs)
+        assert best_trial == mock_best_trial
         assert mock_algorithm.optimize.call_count == 1  # Always run algorithm once for now
