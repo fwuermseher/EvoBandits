@@ -52,6 +52,7 @@ fn benchmark_evobandits(c: &mut Criterion) {
                     black_box(noisy_rosenbrock),
                     black_box(bounds),
                     black_box(budget),
+                    1,
                     Default::default(),
                 );
 

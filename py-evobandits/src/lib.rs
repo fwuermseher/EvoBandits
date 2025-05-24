@@ -14,10 +14,10 @@
 
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
-use pyo3::types::PyList;
+use pyo3::types::{PyDict, PyList};
 use std::panic;
 
-use evobandits_rust::arm::OptimizationFn;
+use evobandits_rust::arm::{Arm as RustArm, OptimizationFn};
 use evobandits_rust::evobandits::EvoBandits as RustEvoBandits;
 use evobandits_rust::genetic::{
     GeneticAlgorithm, CROSSOVER_RATE_DEFAULT, MUTATION_RATE_DEFAULT, MUTATION_SPAN_DEFAULT,
@@ -44,6 +44,55 @@ impl OptimizationFn for PythonOptimizationFn {
                 .expect("Failed to call Python function");
             result.extract::<f64>(py).expect("Failed to extract f64")
         })
+    }
+}
+
+#[pyclass]
+struct Arm {
+    arm: RustArm,
+}
+
+#[pymethods]
+impl Arm {
+    #[new]
+    fn new(action_vector: Vec<i32>) -> PyResult<Self> {
+        let arm = RustArm::new(&action_vector);
+        Ok(Arm { arm })
+    }
+
+    #[getter]
+    fn num_pulls(&self) -> i32 {
+        self.arm.get_num_pulls()
+    }
+
+    #[getter]
+    fn mean_reward(&self) -> f64 {
+        self.arm.get_mean_reward()
+    }
+
+    #[getter]
+    fn action_vector(&self) -> Vec<i32> {
+        self.arm.get_action_vector().to_vec()
+    }
+
+    #[getter]
+    fn to_dict(&self, py: Python) -> Py<PyDict> {
+        let dict = PyDict::new(py);
+        dict.set_item("action_vector", self.arm.get_action_vector().to_vec())
+            .unwrap();
+        dict.set_item("mean_reward", self.arm.get_mean_reward())
+            .unwrap();
+        dict.set_item("num_pulls", self.arm.get_num_pulls())
+            .unwrap();
+        dict.into()
+    }
+}
+
+// Wraps a RustArm as python-compatible Arm instance.
+// Required, since RustArm isn't a #[pyclass] and we want to keep evobandits as clean rust crate.
+impl From<RustArm> for Arm {
+    fn from(arm: RustArm) -> Self {
+        Arm { arm }
     }
 }
 
@@ -83,6 +132,7 @@ impl EvoBandits {
         py_func,
         bounds,
         simulation_budget,
+        n_best,
         seed=None,
     ))]
     fn optimize(
@@ -90,17 +140,23 @@ impl EvoBandits {
         py_func: PyObject,
         bounds: Vec<(i32, i32)>,
         simulation_budget: usize,
+        n_best: usize,
         seed: Option<u64>,
-    ) -> PyResult<Vec<i32>> {
+    ) -> PyResult<Vec<Arm>> {
         let py_opti_function = PythonOptimizationFn::new(py_func);
 
         let result = panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             self.evobandits
-                .optimize(py_opti_function, bounds, simulation_budget, seed)
+                .optimize(py_opti_function, bounds, simulation_budget, n_best, seed)
         }));
 
         match result {
-            Ok(v) => Ok(v),
+            // Convert rust-only Vec<RustArm> into Python-compatible Vec<Arm> wrappers,
+            // so PyO3 can safely return them across the FFI boundary.
+            Ok(result) => {
+                let py_result: Vec<Arm> = result.into_iter().map(Arm::from).collect();
+                Ok(py_result)
+            }
             Err(err) => {
                 if let Some(s) = err.downcast_ref::<&str>() {
                     Err(PyRuntimeError::new_err(format!("{}", s)))
@@ -119,6 +175,7 @@ impl EvoBandits {
 #[pymodule]
 fn evobandits(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<EvoBandits>()?;
+    m.add_class::<Arm>()?;
 
     m.add("POPULATION_SIZE_DEFAULT", POPULATION_SIZE_DEFAULT)?;
     m.add("MUTATION_RATE_DEFAULT", MUTATION_RATE_DEFAULT)?;
