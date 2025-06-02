@@ -21,46 +21,16 @@ if __name__ == "__main__":
     from sko.SA import SA_TSP
 
     from tsp import TSP  # Internal module
+    from datasets import kro100C as dataset  # Internal module
 
-    # TSP based on the kroC dataset, available under:
-    # https://github.com/mahf-opt/mahf-tsplib/blob/master/src/tsplib/kroc100.tsp
-    n_cities = 100
-    # Coordinates of 100 cities (from kroC dataset)
-    coordinates = np.array([
-        [1357, 1905], [2650, 802], [1774, 107], [1307, 964], [3806, 746],
-        [2687, 1353], [43, 1957], [3092, 1668], [185, 1542], [834, 629],
-        [40, 462], [1183, 1391], [2048, 1628], [1097, 643], [1838, 1732],
-        [234, 1118], [3314, 1881], [737, 1285], [779, 777], [2312, 1949],
-        [2576, 189], [3078, 1541], [2781, 478], [705, 1812], [3409, 1917],
-        [323, 1714], [1660, 1556], [3729, 1188], [693, 1383], [2361, 640],
-        [2433, 1538], [554, 1825], [913, 317], [3586, 1909], [2636, 727],
-        [1000, 457], [482, 1337], [3704, 1082], [3635, 1174], [1362, 1526],
-        [2049, 417], [2552, 1909], [3939, 640], [219, 898], [812, 351],
-        [901, 1552], [2513, 1572], [242, 584], [826, 1226], [3278, 799],
-        [86, 1065], [14, 454], [1327, 1893], [2773, 1286], [2469, 1838],
-        [3835, 963], [1031, 428], [3853, 1712], [1868, 197], [1544, 863],
-        [457, 1607], [3174, 1064], [192, 1004], [2318, 1925], [2232, 1374],
-        [396, 828], [2365, 1649], [2499, 658], [1410, 307], [2990, 214],
-        [3646, 1018], [3394, 1028], [1779, 90], [1058, 372], [2933, 1459],
-        [3099, 173], [2178, 978], [138, 1610], [2082, 1753], [2302, 1127],
-        [805, 272], [22, 1617], [3213, 1085], [99, 536], [1533, 1780],
-        [3564, 676], [29, 6], [3808, 1375], [2221, 291], [3499, 1885],
-        [3124, 408], [781, 671], [1027, 1041], [3249, 378], [3297, 491],
-        [213, 220], [721, 186], [3736, 1542], [868, 731], [960, 303],
-    ])
-
-    # Known optimal tour (0-based indices)
-    best_route = np.array([
-        0, 84, 26, 14, 12, 78, 63, 19, 41, 54, 66, 46, 30, 64, 79, 76, 29, 67, 34, 1,
-        53, 5, 74, 21, 7, 16, 24, 89, 33, 57, 97, 87, 27, 38, 37, 70, 55, 42, 4, 85,
-        71, 82, 61, 49, 94, 93, 90, 75, 69, 22, 20, 88, 40, 58, 72, 2, 68, 59, 3, 92,
-        98, 18, 91, 9, 13, 35, 56, 73, 99, 32, 44, 80, 96, 95, 86, 51, 10, 83, 47, 65,
-        43, 62, 50, 15, 36, 8, 77, 81, 6, 25, 60, 31, 23, 45, 28, 17, 48, 11, 39, 52
-    ])
+    # Initialize the TSP
+    n_cities = dataset.N_CITIES
+    coordinates = dataset.COORDINATES
+    best_route = dataset.BEST_TOUR
     dist_matrix = cdist(coordinates, coordinates, metric="euclidean")
     tsp = TSP(n_cities, dist_matrix)
 
-    print("Initialized a TSP based on the kroC dataset with 100 cities.")
+    print(f"Initialized a TSP based on the {dataset.NAME} dataset")
     print(f"Known optimal tour:\n{best_route}")
     print(f"Known minimal distance:\t{tsp.calc_total_dist(best_route)}")
 
@@ -103,7 +73,7 @@ if __name__ == "__main__":
     print(f"Standard deviation:\t{np.sqrt(np.var(results))}")
 
 
-# Initialized a TSP based on the kroC dataset with 100 cities.
+#  Initialized a TSP based on the kro100C dataset.
 # Known optimal tour:
 # [ 0 84 26 14 12 78 63 19 41 54 66 46 30 64 79 76 29 67 34  1 53  5 74 21
 #   7 16 24 89 33 57 97 87 27 38 37 70 55 42  4 85 71 82 61 49 94 93 90 75

@@ -21,46 +21,16 @@ if __name__ == "__main__":
     from sko.GA import GA_TSP
 
     from tsp import TSP  # Internal module
+    from datasets import kro100C as dataset  # Internal module
 
-    # TSP based on the kroC dataset, available under:
-    # https://github.com/mahf-opt/mahf-tsplib/blob/master/src/tsplib/kroc100.tsp
-    n_cities = 100
-    # Coordinates of 100 cities (from kroC dataset)
-    coordinates = np.array([
-        [1357, 1905], [2650, 802], [1774, 107], [1307, 964], [3806, 746],
-        [2687, 1353], [43, 1957], [3092, 1668], [185, 1542], [834, 629],
-        [40, 462], [1183, 1391], [2048, 1628], [1097, 643], [1838, 1732],
-        [234, 1118], [3314, 1881], [737, 1285], [779, 777], [2312, 1949],
-        [2576, 189], [3078, 1541], [2781, 478], [705, 1812], [3409, 1917],
-        [323, 1714], [1660, 1556], [3729, 1188], [693, 1383], [2361, 640],
-        [2433, 1538], [554, 1825], [913, 317], [3586, 1909], [2636, 727],
-        [1000, 457], [482, 1337], [3704, 1082], [3635, 1174], [1362, 1526],
-        [2049, 417], [2552, 1909], [3939, 640], [219, 898], [812, 351],
-        [901, 1552], [2513, 1572], [242, 584], [826, 1226], [3278, 799],
-        [86, 1065], [14, 454], [1327, 1893], [2773, 1286], [2469, 1838],
-        [3835, 963], [1031, 428], [3853, 1712], [1868, 197], [1544, 863],
-        [457, 1607], [3174, 1064], [192, 1004], [2318, 1925], [2232, 1374],
-        [396, 828], [2365, 1649], [2499, 658], [1410, 307], [2990, 214],
-        [3646, 1018], [3394, 1028], [1779, 90], [1058, 372], [2933, 1459],
-        [3099, 173], [2178, 978], [138, 1610], [2082, 1753], [2302, 1127],
-        [805, 272], [22, 1617], [3213, 1085], [99, 536], [1533, 1780],
-        [3564, 676], [29, 6], [3808, 1375], [2221, 291], [3499, 1885],
-        [3124, 408], [781, 671], [1027, 1041], [3249, 378], [3297, 491],
-        [213, 220], [721, 186], [3736, 1542], [868, 731], [960, 303],
-    ])
-
-    # Known optimal tour (0-based indices)
-    best_route = np.array([
-        0, 84, 26, 14, 12, 78, 63, 19, 41, 54, 66, 46, 30, 64, 79, 76, 29, 67, 34, 1,
-        53, 5, 74, 21, 7, 16, 24, 89, 33, 57, 97, 87, 27, 38, 37, 70, 55, 42, 4, 85,
-        71, 82, 61, 49, 94, 93, 90, 75, 69, 22, 20, 88, 40, 58, 72, 2, 68, 59, 3, 92,
-        98, 18, 91, 9, 13, 35, 56, 73, 99, 32, 44, 80, 96, 95, 86, 51, 10, 83, 47, 65,
-        43, 62, 50, 15, 36, 8, 77, 81, 6, 25, 60, 31, 23, 45, 28, 17, 48, 11, 39, 52
-    ])
+    # Initialize the TSP
+    n_cities = dataset.N_CITIES
+    coordinates = dataset.COORDINATES
+    best_route = dataset.BEST_TOUR
     dist_matrix = cdist(coordinates, coordinates, metric="euclidean")
     tsp = TSP(n_cities, dist_matrix)
 
-    print("Initialized a TSP based on the kroC dataset with 100 cities.")
+    print(f"Initialized a TSP based on the {dataset.NAME} dataset")
     print(f"Known optimal tour:\n{best_route}")
     print(f"Known minimal distance:\t{tsp.calc_total_dist(best_route)}")
 
@@ -69,7 +39,7 @@ if __name__ == "__main__":
     algorithm = GA_TSP(
         func=tsp.calc_total_dist,
         n_dim=n_cities,
-        size_pop=50,
+        size_pop=20,
         max_iter=2500,
         prob_mut=0.9,
     )
@@ -100,8 +70,10 @@ if __name__ == "__main__":
     print(f"Mean of Sample Results:\t{np.mean(results)}")
     print(f"Standard deviation:\t{np.sqrt(np.var(results))}")
 
-
-# Initialized a TSP based on the kroC dataset with 100 cities.
+#
+###################### KRO100C #####################
+#
+# Initialized a TSP based on the kro100C dataset.
 # Known optimal tour:
 # [ 0 84 26 14 12 78 63 19 41 54 66 46 30 64 79 76 29 67 34  1 53  5 74 21
 #   7 16 24 89 33 57 97 87 27 38 37 70 55 42  4 85 71 82 61 49 94 93 90 75
@@ -213,3 +185,229 @@ if __name__ == "__main__":
 # Best distance (sample #99):     [22686.45473858]
 # Mean of Sample Results: 22581.0236408182
 # Standard deviation:     710.5421287793392
+#
+##################### LIN318 #####################
+#
+# Initialized a TSP based on the lin318 dataset
+# Known optimal tour:
+# [0 0]
+# Known minimal distance: 0.0
+# Example Results obtained from a Genetic Algorithm:
+# Number of Samples:      100
+# Best distance (sample #0):      [114311.88128055]
+# Best distance (sample #1):      [114562.88270243]
+# Best distance (sample #2):      [125533.09786675]
+# Best distance (sample #3):      [128723.22521214]
+# Best distance (sample #4):      [118592.50945522]
+# Best distance (sample #5):      [126428.15322834]
+# Best distance (sample #6):      [125418.72563832]
+# Best distance (sample #7):      [120423.99101675]
+# Best distance (sample #8):      [122884.35799207]
+# Best distance (sample #9):      [113062.37736291]
+# Best distance (sample #10):     [114153.68852318]
+# Best distance (sample #11):     [119071.7569629]
+# Best distance (sample #12):     [118879.39059878]
+# Best distance (sample #13):     [122273.72898874]
+# Best distance (sample #14):     [116255.55174613]
+# Best distance (sample #15):     [118200.88057801]
+# Best distance (sample #16):     [124727.4972841]
+# Best distance (sample #17):     [118361.43701285]
+# Best distance (sample #18):     [123827.44520929]
+# Best distance (sample #19):     [111174.26920009]
+# Best distance (sample #20):     [118733.63825367]
+# Best distance (sample #21):     [129163.63961267]
+# Best distance (sample #22):     [126051.97543935]
+# Best distance (sample #23):     [118789.86885777]
+# Best distance (sample #24):     [120731.22875334]
+# Best distance (sample #25):     [120163.85947675]
+# Best distance (sample #26):     [119662.52292471]
+# Best distance (sample #27):     [120736.86809164]
+# Best distance (sample #28):     [123103.96612881]
+# Best distance (sample #29):     [113721.93093944]
+# Best distance (sample #30):     [124065.6834928]
+# Best distance (sample #31):     [122933.44167766]
+# Best distance (sample #32):     [117638.26930244]
+# Best distance (sample #33):     [118031.19822447]
+# Best distance (sample #34):     [121814.45081451]
+# Best distance (sample #35):     [119323.76213751]
+# Best distance (sample #36):     [119244.90229364]
+# Best distance (sample #37):     [124405.73087708]
+# Best distance (sample #38):     [116894.36820472]
+# Best distance (sample #39):     [119515.76882205]
+# Best distance (sample #40):     [122560.5399742]
+# Best distance (sample #41):     [113148.2540884]
+# Best distance (sample #42):     [122080.89350084]
+# Best distance (sample #43):     [119838.86527207]
+# Best distance (sample #44):     [110279.20075531]
+# Best distance (sample #45):     [121164.5291874]
+# Best distance (sample #46):     [107305.3291376]
+# Best distance (sample #47):     [120469.832569]
+# Best distance (sample #48):     [117984.08637167]
+# Best distance (sample #49):     [124120.39971814]
+# Best distance (sample #50):     [118310.24770853]
+# Best distance (sample #51):     [124385.27894974]
+# Best distance (sample #52):     [117616.43805567]
+# Best distance (sample #53):     [120984.68067555]
+# Best distance (sample #54):     [125339.62962203]
+# Best distance (sample #55):     [108628.30009274]
+# Best distance (sample #56):     [111091.58429623]
+# Best distance (sample #57):     [110823.89940075]
+# Best distance (sample #58):     [120611.98311144]
+# Best distance (sample #59):     [114598.42094094]
+# Best distance (sample #60):     [118800.92685478]
+# Best distance (sample #61):     [124552.03364317]
+# Best distance (sample #62):     [107693.49852901]
+# Best distance (sample #63):     [119001.3507915]
+# Best distance (sample #64):     [118387.51442467]
+# Best distance (sample #65):     [116064.60851755]
+# Best distance (sample #66):     [116232.22840067]
+# Best distance (sample #67):     [118946.38410011]
+# Best distance (sample #68):     [115908.89955349]
+# Best distance (sample #69):     [119036.91574677]
+# Best distance (sample #70):     [129154.59451227]
+# Best distance (sample #71):     [104640.4743291]
+# Best distance (sample #72):     [117256.85493187]
+# Best distance (sample #73):     [125362.80600073]
+# Best distance (sample #74):     [117315.57859302]
+# Best distance (sample #75):     [125837.22538056]
+# Best distance (sample #76):     [116777.67358339]
+# Best distance (sample #77):     [119617.66120341]
+# Best distance (sample #78):     [123729.71299363]
+# Best distance (sample #79):     [127675.55402515]
+# Best distance (sample #80):     [119161.34557734]
+# Best distance (sample #81):     [113780.15127061]
+# Best distance (sample #82):     [123970.32036667]
+# Best distance (sample #83):     [117600.71365515]
+# Best distance (sample #84):     [119247.26752463]
+# Best distance (sample #85):     [119609.40015422]
+# Best distance (sample #86):     [109505.61898937]
+# Best distance (sample #87):     [116457.22202918]
+# Best distance (sample #88):     [110600.12240208]
+# Best distance (sample #89):     [117423.29204524]
+# Best distance (sample #90):     [121561.38645866]
+# Best distance (sample #91):     [120266.3245211]
+# Best distance (sample #92):     [123055.29379254]
+# Best distance (sample #93):     [124122.70197508]
+# Best distance (sample #94):     [120640.11241677]
+# Best distance (sample #95):     [120664.79178944]
+# Best distance (sample #96):     [117714.50117525]
+# Best distance (sample #97):     [118756.85810277]
+# Best distance (sample #98):     [128660.12166997]
+# Best distance (sample #99):     [124795.1318085]
+# Mean of Sample Results: 119325.21489452252
+# Standard deviation:     5006.685157978833
+#
+##################### KRO100C + NOISE ############
+#
+# Initialized a TSP based on the kro100C dataset
+# Known optimal tour:
+# [ 0 84 26 14 12 78 63 19 41 54 66 46 30 64 79 76 29 67 34  1 53  5 74 21
+#   7 16 24 89 33 57 97 87 27 38 37 70 55 42  4 85 71 82 61 49 94 93 90 75
+#  69 22 20 88 40 58 72  2 68 59  3 92 98 18 91  9 13 35 56 73 99 32 44 80
+#  96 95 86 51 10 83 47 65 43 62 50 15 36  8 77 81  6 25 60 31 23 45 28 17
+#  48 11 39 52]
+# Known minimal distance: 19554.810452390826
+# Example Results obtained from a Genetic Algorithm:
+# Number of Samples:      100
+# Best distance (sample #0):      [23827.7135989]
+# Best distance (sample #1):      [24167.43905337]
+# Best distance (sample #2):      [24300.52468917]
+# Best distance (sample #3):      [26057.47160503]
+# Best distance (sample #4):      [22753.73964257]
+# Best distance (sample #5):      [28009.59736719]
+# Best distance (sample #6):      [25160.63682072]
+# Best distance (sample #7):      [26550.19882775]
+# Best distance (sample #8):      [26187.40326388]
+# Best distance (sample #9):      [27282.92170656]
+# Best distance (sample #10):     [27593.50445212]
+# Best distance (sample #11):     [25711.33174405]
+# Best distance (sample #12):     [27416.55483406]
+# Best distance (sample #13):     [25253.76631807]
+# Best distance (sample #14):     [25102.44107143]
+# Best distance (sample #15):     [25211.9791742]
+# Best distance (sample #16):     [25380.01852349]
+# Best distance (sample #17):     [22171.79300814]
+# Best distance (sample #18):     [26477.92338514]
+# Best distance (sample #19):     [27289.94118579]
+# Best distance (sample #20):     [25685.02593692]
+# Best distance (sample #21):     [25352.7211493]
+# Best distance (sample #22):     [25564.59084843]
+# Best distance (sample #23):     [25918.43370172]
+# Best distance (sample #24):     [27263.9346492]
+# Best distance (sample #25):     [25580.33404284]
+# Best distance (sample #26):     [23988.31016177]
+# Best distance (sample #27):     [24612.52841605]
+# Best distance (sample #28):     [25973.87174081]
+# Best distance (sample #29):     [24403.54514234]
+# Best distance (sample #30):     [27630.89530858]
+# Best distance (sample #31):     [26799.78915291]
+# Best distance (sample #32):     [23903.9025566]
+# Best distance (sample #33):     [24488.12093341]
+# Best distance (sample #34):     [27497.13138543]
+# Best distance (sample #35):     [24518.55698655]
+# Best distance (sample #36):     [26432.75576391]
+# Best distance (sample #37):     [25058.91324802]
+# Best distance (sample #38):     [23943.33919328]
+# Best distance (sample #39):     [25372.50793847]
+# Best distance (sample #40):     [25166.53056156]
+# Best distance (sample #41):     [24626.70012577]
+# Best distance (sample #42):     [24516.57224868]
+# Best distance (sample #43):     [26411.81845668]
+# Best distance (sample #44):     [26298.46823529]
+# Best distance (sample #45):     [25737.43204706]
+# Best distance (sample #46):     [23058.47792355]
+# Best distance (sample #47):     [25726.40903949]
+# Best distance (sample #48):     [26818.07869603]
+# Best distance (sample #49):     [24788.74295928]
+# Best distance (sample #50):     [23553.16069867]
+# Best distance (sample #51):     [25649.3938607]
+# Best distance (sample #52):     [25558.54935208]
+# Best distance (sample #53):     [26374.12643628]
+# Best distance (sample #54):     [25362.28638598]
+# Best distance (sample #55):     [23827.58647766]
+# Best distance (sample #56):     [27194.14913428]
+# Best distance (sample #57):     [27774.52218001]
+# Best distance (sample #58):     [26307.84826336]
+# Best distance (sample #59):     [24819.56069038]
+# Best distance (sample #60):     [30108.98400304]
+# Best distance (sample #61):     [25635.95767689]
+# Best distance (sample #62):     [25306.28646799]
+# Best distance (sample #63):     [24051.82480049]
+# Best distance (sample #64):     [25615.85014886]
+# Best distance (sample #65):     [25014.37141292]
+# Best distance (sample #66):     [27478.69601097]
+# Best distance (sample #67):     [24535.65366495]
+# Best distance (sample #68):     [24965.15272591]
+# Best distance (sample #69):     [24089.99206868]
+# Best distance (sample #70):     [25747.04916]
+# Best distance (sample #71):     [26507.59841173]
+# Best distance (sample #72):     [26044.41981161]
+# Best distance (sample #73):     [25525.82903965]
+# Best distance (sample #74):     [24052.45781057]
+# Best distance (sample #75):     [28583.93200675]
+# Best distance (sample #76):     [24621.19586221]
+# Best distance (sample #77):     [25390.72837038]
+# Best distance (sample #78):     [24164.96591235]
+# Best distance (sample #79):     [24124.54815756]
+# Best distance (sample #80):     [24576.13457704]
+# Best distance (sample #81):     [25164.89445598]
+# Best distance (sample #82):     [25746.24739264]
+# Best distance (sample #83):     [23793.18276237]
+# Best distance (sample #84):     [25274.00248769]
+# Best distance (sample #85):     [26095.54200388]
+# Best distance (sample #86):     [27255.68368606]
+# Best distance (sample #87):     [26618.20062796]
+# Best distance (sample #88):     [28536.87454321]
+# Best distance (sample #89):     [24766.88216888]
+# Best distance (sample #90):     [25892.56975714]
+# Best distance (sample #91):     [26037.84843104]
+# Best distance (sample #92):     [23419.66918808]
+# Best distance (sample #93):     [23024.80076553]
+# Best distance (sample #94):     [26959.09271112]
+# Best distance (sample #95):     [26853.23994134]
+# Best distance (sample #96):     [25203.70098817]
+# Best distance (sample #97):     [24574.05042622]
+# Best distance (sample #98):     [25522.71693675]
+# Best distance (sample #99):     [25848.98545519]
+# Mean of Sample Results: 25541.963351307713
+# Standard deviation:     1361.477800530837
