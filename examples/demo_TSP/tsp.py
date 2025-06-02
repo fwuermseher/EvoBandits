@@ -14,7 +14,6 @@
 
 
 import numpy as np
-from scipy.spatial.distance import cdist
 
 
 class TSP:
@@ -39,7 +38,7 @@ class TSP:
 
         Note: This method does not check if a route is 'valid', i.e., whether it contains each
         city exactly once. This decision was made to prioritize performance, as validity checks
-        can be computationally expensive for a large n_cities or repeated calcuation.
+        can be computationally expensive for a large n_cities or repeated calculation.
 
         Args:
             route (np.ndarray): 1D array of city indices representing the visiting order.
@@ -55,6 +54,8 @@ class TSP:
 
 if __name__ == "__main__":
     """Usage example for the TSP"""
+
+    from scipy.spatial.distance import cdist
 
     # Generate a number of random cities.
     n_cities = 5
