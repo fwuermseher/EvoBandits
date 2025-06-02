@@ -53,7 +53,7 @@ class TSP:
 
 
 if __name__ == "__main__":
-    """Usage example for the TSP"""
+    """Usage example"""
 
     from scipy.spatial.distance import cdist
 
