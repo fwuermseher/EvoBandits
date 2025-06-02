@@ -22,6 +22,10 @@
 import numpy as np
 from evobandits import EvoBandits
 
+# Seeding to ensure tp4_func and EvoBandits are reproducible
+SEED = 0
+RNG = np.random.default_rng(SEED)
+
 # Constants for TP4
 BETA_1 = 300
 BETA_2 = 500
@@ -38,7 +42,7 @@ def tp4_func(action_vector: list[int]) -> float:
         res += BETA_1 * np.exp(-GAMMA_1 * (val - EPS_1) ** 2) + BETA_2 * np.exp(
             -GAMMA_2 * (val - EPS_2) ** 2
         )
-    res += np.random.normal(loc=0, scale=100 * len(action_vector))  # add gaussian noise
+    res += RNG.normal(loc=0, scale=100 * len(action_vector))  # add gaussian noise
     res = -res  # negate result for minimization problem
     return res
 
@@ -59,5 +63,5 @@ if __name__ == "__main__":
     n_trials = 20_000  # number of evaluations for tp4_func
     n_best = 1  # display only best result
     algorithm = EvoBandits()
-    results = algorithm.optimize(tp4_func, bounds, n_trials, n_best)
+    results = algorithm.optimize(tp4_func, bounds, n_trials, n_best, SEED)
     print(f"Optimization result:\t{results[0].to_dict}")
