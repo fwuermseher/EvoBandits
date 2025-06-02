@@ -65,6 +65,7 @@ if __name__ == "__main__":
     print(f"Known minimal distance:\t{tsp.calc_total_dist(best_route)}")
 
     # Run a Genetic Algorithm and visualize the results
+    # based on: https://scikit-opt.github.io/scikit-opt/#/en/README?id=_22-genetic-algorithm-for-tsptravelling-salesman-problem
     algorithm = GA_TSP(
         func=tsp.calc_total_dist,
         n_dim=n_cities,
