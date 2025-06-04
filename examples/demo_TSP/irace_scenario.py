@@ -13,32 +13,33 @@
 # limitations under the License.
 
 
+# rpy2 appears to be broken.
+# Install pip install git+https://github.com/fwuermseher/rpy2.git@add-consolewrite-to-CALLBACK-INIT-PAIRS --no-cache-dir
+
+from irace import (
+    irace,
+    ParameterSpace,
+    Categorical,
+    Integer,
+    Scenario,
+    Experiment,
+)
+
+import numpy as np
+from scipy.spatial.distance import cdist
+from sko.GA import GA_TSP
+
+from tsp import TSP  # Internal module
+from datasets import kro100C as dataset  # Internal module
+
 if __name__ == "__main__":
-    """Optimizes a Genetic Algorithm for solving TSPs using EvoBandits"""
-
-    import evobandits as eb
-    from scipy.spatial.distance import cdist
-
-    from tsp import TSP  # Internal module
-    from datasets import kro100C as dataset  # Internal module
-
     # Initialize TSP
     n_cities = dataset.N_CITIES
     coordinates = dataset.COORDINATES
     dist_matrix = cdist(coordinates, coordinates, metric="euclidean")
     tsp = TSP(n_cities, dist_matrix)
 
-    # Define Study Objective
-    from typing import Callable
-    from sko.GA import GA_TSP
-
-    def objective_ga(
-        size_pop: int,
-        max_iter: int,
-        prob_mut: float,
-        n_dim: int = n_cities,
-        fitness_func: Callable = tsp.calc_total_dist,
-    ) -> float:
+    def target_runner(experiment: Experiment, scenario: Scenario) -> float:
         """
         Run a Genetic Algorithm (GA) to optimize a given fitness function.
 
@@ -52,23 +53,25 @@ if __name__ == "__main__":
         Returns:
             float: Best (minimum) fitness value found by the GA.
         """
-        ga = GA_TSP(fitness_func, n_dim, size_pop, max_iter, prob_mut)
+        ga = GA_TSP(
+            func=tsp.calc_total_dist, n_dim=n_cities, **experiment.configuration
+        )
         _, best_dist = ga.run()
-        print("Completed Trial:", best_dist[0])
         return best_dist[0]
 
-    # Model solution space
-    params = {
-        "size_pop": eb.CategoricalParam(
-            list(range(2, 1001, 2))
-        ),  # must be an even number
-        "prob_mut": eb.FloatParam(0.0, 1.0, nsteps=1000),
-        "max_iter": eb.IntParam(10, 1000),
-    }
+    parameter_space = ParameterSpace(
+        [
+            Categorical("size_pop", list(range(2, 1001, 2))),
+            Categorical("prob_mut", [round(x, 4) for x in np.arange(0.0, 1.0, 0.0001)]),
+            Integer("max_iter", 10, 1000),
+        ]
+    )
 
-    # Run optimization
-    study = eb.Study(seed=42)
-    best_result = study.optimize(objective_ga, params, n_trials=500)
-    print(best_result)
+    scenario = Scenario(
+        max_experiments=500,  # matches n_trials
+        verbose=1,
+        seed=42,
+    )
+    result = irace(target_runner, parameter_space, scenario, return_df=True)
 
-    # TODO: Integrate EvoBandits 0.0.6
+    print(result)
