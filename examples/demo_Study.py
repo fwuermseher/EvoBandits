@@ -38,9 +38,9 @@ if __name__ == "__main__":
 
     # Execute the Optimization
     study = Study(seed=42, algorithm=my_evobandits)
-    results = study.optimize(noisy_rosenbrock, params, 10000, n_best=3)
+    study.optimize(noisy_rosenbrock, params, 20000, n_best=1, n_runs=10)
 
-    print("Number of Results:", len(results))  # matches n_best
-    [
-        print(r) for r in results
-    ]  # params, value, variance, std_dev, n_evaluations and position for each result
+    print("Number of Results:", len(study.results))  # matches n_best * n_runs
+    print("Best configuration:", study.best_params)
+    print("Best result: ", study.best_value)
+    print("Mean result:", study.mean_value)
