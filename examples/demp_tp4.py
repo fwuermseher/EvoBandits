@@ -20,10 +20,10 @@
 # pp. 360-374, April 2025, doi: 10.1109/TEVC.2024.3524505.
 
 import numpy as np
-from evobandits import EvoBandits
+from evobandits import EvoBandits, IntParam, Study
 
-# Seeding to ensure tp4_func and EvoBandits are reproducible
-SEED = 0
+# Seeding to ensure objective and EvoBandits instances are reproducible
+SEED = 42
 RNG = np.random.default_rng(SEED)
 
 # Constants for TP4
@@ -42,26 +42,32 @@ def tp4_func(action_vector: list[int]) -> float:
         res += BETA_1 * np.exp(-GAMMA_1 * (val - EPS_1) ** 2) + BETA_2 * np.exp(
             -GAMMA_2 * (val - EPS_2) ** 2
         )
-    res += RNG.normal(loc=0, scale=100 * len(action_vector))  # add gaussian noise
-    res = -res  # negate result for minimization problem
+    res += RNG.normal(
+        loc=0, scale=100 * len(action_vector)
+    )  # add noise (100 * dimension)
+    res = -res  # negate result to model a minimization problem
     return res
 
 
 if __name__ == "__main__":
     # Print the known global optimum
-    dimensions = 5
-    print(f"Optimization Problem:\tTP4_D{dimensions}")
+    dimension = 5
+    print(f"Optimization Problem:\tTP4_D{dimension}")
 
-    opt_action_vector = [EPS_2] * dimensions
+    opt_action_vector = [EPS_2] * dimension
     print(f"Optimal action_vector:\t{opt_action_vector}")
 
-    opt_value = -500.4 * dimensions
+    opt_value = -500.4 * dimension
     print(f"Optimal function value:\t{opt_value:.4f}")
 
-    # Direct optimization using an instance of EvoBandits
-    bounds = [(-100, 100)] * dimensions  # solution space
+    # Define the solution space
+    params = {"action_vector": IntParam(-100, 100, size=dimension)}
+
+    # Run the optimization with EvoBandits:
     n_trials = 20_000  # number of evaluations for tp4_func
     n_best = 1  # display only best result
-    algorithm = EvoBandits()
-    results = algorithm.optimize(tp4_func, bounds, n_trials, n_best, SEED)
-    print(f"Optimization result:\t{results[0].to_dict}")
+    algorithm = EvoBandits()  # GMAB algorithm with default configuration
+
+    study = Study(SEED, algorithm)
+    results = study.optimize(tp4_func, params, n_trials, n_best=n_best)
+    print(f"Optimization result:\t{study.best_solution}")
