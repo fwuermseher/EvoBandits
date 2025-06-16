@@ -50,7 +50,7 @@ def tp4_func(action_vector: list[int]) -> float:
 
 
 if __name__ == "__main__":
-    # Print the known global optimum
+    # Print the known global optimum for the 5-dimensional instance of TP4
     dimension = 5
     print(f"Optimization Problem:\tTP4_D{dimension}")
 
@@ -60,7 +60,8 @@ if __name__ == "__main__":
     opt_value = -500.4 * dimension
     print(f"Optimal function value:\t{opt_value:.4f}")
 
-    # Define the solution space
+    # Solution space:
+    # 5-dimensional integer vector with each element x_d ∈ [-100, 100] ∩ ℤ
     params = {"action_vector": IntParam(-100, 100, size=dimension)}
 
     # Run the optimization with EvoBandits:
