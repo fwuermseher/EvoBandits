@@ -1,17 +1,3 @@
-# Copyright 2025 EvoBandits
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 # Optimization with EvoBandits based on Test Problem 4 (TP4) from Preil & Krapp, 2025.
 #
 # Reference:
@@ -60,8 +46,7 @@ if __name__ == "__main__":
     opt_value = -500.4 * dimension
     print(f"Optimal function value:\t{opt_value:.4f}")
 
-    # Solution space:
-    # 5-dimensional integer vector with each element x_d ∈ [-100, 100] ∩ ℤ
+    # Define the solution space:
     params = {"action_vector": IntParam(-100, 100, size=dimension)}
 
     # Run the optimization with EvoBandits:
