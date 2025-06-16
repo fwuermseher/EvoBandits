@@ -25,9 +25,8 @@ def tp4_func(action_vector: list[int]) -> float:
     """Calculates the function value for TP4"""
     res = 0
     for val in action_vector:
-        res += BETA_1 * np.exp(-GAMMA_1 * (val - EPS_1) ** 2) + BETA_2 * np.exp(
-            -GAMMA_2 * (val - EPS_2) ** 2
-        )
+        res += BETA_1 * np.exp(-GAMMA_1 * (val - EPS_1) ** 2) + \
+               BETA_2 * np.exp(-GAMMA_2 * (val - EPS_2) ** 2)
     res += RNG.normal(
         loc=0, scale=100 * len(action_vector)
     )  # add noise (100 * dimension)
