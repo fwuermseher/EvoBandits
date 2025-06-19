@@ -127,13 +127,13 @@ def _mutation(tour, mutation_rate):
 
 @njit
 def genetic_algorithm(
-    mutation_rate,
     crossover_rate,
+    mutation_rate,
     elite_size,
     population_size=50,
     generations=300,
     dist_matrix=DIST_MATRIX,
-    seed=SEED,
+    seed=-1,
 ) -> float:
     """
     Runs a genetic algorithm to solve a TSP instance with the parameters:
@@ -148,7 +148,8 @@ def genetic_algorithm(
 
     Returns the shortest distance found.
     """
-    np.random.seed(seed)  # Seed for reproducibility within Numba context
+    if seed < 0:
+        np.random.seed(seed)
 
     # Initialize population with random permutations (tours).
     population = np.empty((population_size, N_CITIES), dtype=np.int32)
@@ -180,17 +181,30 @@ def genetic_algorithm(
 
 
 if __name__ == "__main__":
+    # TODO integrate evobandits 0.0.6 release (seeding, renamings)
+    from evobandits import EvoBandits, Study, FloatParam, CategoricalParam
+
     # Print the coordinates in a format compatible with online TSP solvers
     # such as http://kay-schoenberger.de/math/tsp/
     for i in range(len(COORDINATES)):
         print(f"{i} {COORDINATES[i][0]} {COORDINATES[i][1]}")
 
-    # Execute the genetic algorithm
-    result = genetic_algorithm(
-        mutation_rate=0.001,
-        crossover_rate=0.5,
-        population_size=50,
-        elite_size=10,
-        generations=300,
-    )
-    print(f"Shortest distance found using the GA:\t{result}")
+    # Define the solution space
+    params = {
+        "crossover_rate": FloatParam(0.0, 1.0, nsteps=20),
+        "mutation_rate": FloatParam(0.0001, 1.0, nsteps=20, log=True),
+        "elite_size": CategoricalParam(choices=[0, 10, 20]),
+        "population_size": CategoricalParam(choices=[20, 40, 60]),
+        "generations": CategoricalParam(choices=[100, 200, 300]),
+    }
+
+    # Run the optimization with EvoBandits
+    n_trials = 500  # number of evaluations for tp4_func
+    n_best = 1  # display only best result
+    algorithm = EvoBandits()  # GMAB algorithm with default configuration
+
+    study = Study(SEED, algorithm)
+    results = study.optimize(genetic_algorithm, params, n_trials)
+
+    print(f"Shortest distance found using the GA:\t{study.best_value}")
+    print(f"Configuration for shortest distance:\t{study.best_params}")
