@@ -127,26 +127,30 @@ def _mutation(tour, mutation_rate):
 
 @njit
 def genetic_algorithm(
-    crossover_rate,
-    mutation_rate,
-    elite_size,
-    population_size=50,
-    generations=300,
-    dist_matrix=DIST_MATRIX,
-    seed=-1,
+    population_size: int,
+    elite_size: int,
+    crossover_rate: float,
+    mutation_rate: float,
+    generations: int = 200,
+    dist_matrix: np.ndarray = DIST_MATRIX,
+    seed: int = -1,
 ) -> float:
     """
-    Runs a genetic algorithm to solve a TSP instance with the parameters:
+    Runs a genetic algorithm to solve a TSP instance.
 
-    - `mutation_rate`: Probability of swapping two cities in a tour.
-    - `crossover_rate`: Probability of performing a crossover.
-    - `elite_size`: Number of best tours preserved across generations.
-    - `population_size`: Number of tours per generation (default: 50).
-    - `generations`: Number of iterations (default: 300).
-    - `dist_matrix`: Precomputed distance matrix.
-    - `seed`: Random seed for reproducibility.
+    Args:
+        population_size: Number of tours per generation.
+        elite_size: Number of best tours preserved across generations.
+        mutation_rate: The probability to an individual city in a tour.
+        crossover_rate: Probability to perform a crossover on a tour.
+        generations: Number of iterations. Defaults to 200.
+        dist_matrix: A precomputed distance matrix for the TSP.
+            Defaults to a seeded instance for 100 cities.
+        seed: A random seed to reproduce results.
+            Defaults to -1, a sentinel value that disables seeding.
 
-    Returns the shortest distance found.
+    Returns:
+        The shortest distance found.
     """
     if seed < 0:
         np.random.seed(seed)
