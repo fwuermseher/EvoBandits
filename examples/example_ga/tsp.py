@@ -1,17 +1,3 @@
-# Copyright 2025 EvoBandits
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 
 from numba import njit, prange
 import numpy as np
@@ -120,98 +106,16 @@ _DATASET = """
 """
 
 BEST_TOUR = [
-    44,
-    19,
-    0,
-    50,
-    76,
-    63,
-    64,
-    13,
-    8,
-    67,
-    22,
-    52,
-    34,
-    88,
-    65,
-    81,
-    10,
-    79,
-    20,
-    35,
-    12,
-    9,
-    38,
-    56,
-    43,
-    7,
-    86,
-    3,
-    29,
-    4,
-    30,
-    40,
-    71,
-    47,
-    85,
-    48,
-    89,
-    54,
-    28,
-    66,
-    83,
-    45,
-    17,
-    62,
-    75,
-    55,
-    60,
-    37,
-    16,
-    36,
-    84,
-    80,
-    15,
-    25,
-    82,
-    42,
-    53,
-    59,
-    32,
-    78,
-    46,
-    74,
-    57,
-    27,
-    6,
-    14,
-    5,
-    90,
-    23,
-    73,
-    72,
-    1,
-    51,
-    21,
-    31,
-    41,
-    49,
-    26,
-    33,
-    24,
-    77,
-    61,
-    11,
-    18,
-    68,
-    58,
-    69,
-    39,
-    87,
-    70,
-    2,
+    44, 19,  0, 50, 76, 63, 64, 13,  8, 67, 22, 52, 34, 88, 65, 81,
+    10, 79, 20, 35, 12,  9, 38, 56, 43,  7, 86,  3, 29,  4, 30, 40,
+    71, 47, 85, 48, 89, 54, 28, 66, 83, 45, 17, 62, 75, 55, 60, 37,
+    16, 36, 84, 80, 15, 25, 82, 42, 53, 59, 32, 78, 46, 74, 57, 27,
+     6, 14,  5, 90, 23, 73, 72,  1, 51, 21, 31, 41, 49, 26, 33, 24,
+    77, 61, 11, 18, 68, 58, 69, 39, 87, 70,  2
 ]
+
+BEST_COST = 5.209008402820838
+
 
 # Extract the coordinates and the number of cities in the dataset.
 CITIES = np.array(
@@ -381,7 +285,7 @@ def genetic_algorithm(
 
     Args:
         population_size (int): Number of tours per generation.
-        elite_size (int): Number of best tours preserved across iterations.
+        elite_size (int): Number of best tours preserved over iterations.
         tournament_size (int): Size of the tournament for selection.
         crossover_rate (float): Probability of performing crossover.
         mutation_rate (float): Probability of performing mutation.
@@ -399,6 +303,7 @@ def genetic_algorithm(
         This GA uses a precomputed, hard-coded distance matrix based
         on a fixed set of 91 cities.
     """
+    # Initialize the rng to reproduce
     if seed != -1:
         np.random.seed(seed)
 
@@ -423,12 +328,14 @@ def genetic_algorithm(
             child = _crossover(parent1, parent2, crossover_rate)
             child = _mutation(child, mutation_rate)
             offspring[i] = child
+
         pop = offspring
 
     # Apply final ranking to select the best individual tour.
     pop, _ = _ranking(pop)
     best_tour = pop[0]
     best_cost = _calc_total_distance(best_tour)
+
     return best_cost, best_tour
 
 
@@ -462,62 +369,87 @@ def tourplot(tour, cities=CITIES, ax=None, line_color="blue"):
     return ax
 
 
-# Monkey-patch to extend pyplot and Axes
-plt.tourplot = lambda tour, **kwargs: tourplot(tour, **kwargs)  # type: ignore
-Axes.tourplot = lambda self, tour, **kwargs: tourplot(tour, ax=self, **kwargs)  # type: ignore
+def patch_plotlib_tourplot():
+    """Monkey-patch to extend pyplot and Axes with tourplot"""
+    plt.tourplot = lambda tour, **kwargs: tourplot(  # type: ignore
+        tour, **kwargs
+    )
+    Axes.tourplot = lambda self, tour, **kwargs: tourplot(  # type: ignore
+        tour, ax=self, **kwargs
+    )
 
 
 if __name__ == "__main__":
-    # Toy Example with small solution space
-    from evobandits import EvoBandits, Study, FloatParam, CategoricalParam, IntParam
+    # ---- Setup ---- #
+    import os
+    import json
+    from pathlib import Path
+    from datetime import datetime
 
-    # Objective: wraps genetic algorithm to return only best_cost
-    def ga_objective(**params):
-        best_cost, _ = genetic_algorithm(**params)
-        return best_cost
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    records_dir = Path(script_dir) / "records"
+    os.makedirs(records_dir, exist_ok=True)
 
-    # Define the solution space
-    params = {
-        "population_size": CategoricalParam([100, 250, 500]),
-        "elite_size": CategoricalParam([0, 10, 20]),
-        "tournament_size": IntParam(0, 10),
-        "crossover_rate": FloatParam(0.0, 1.0, nsteps=10),
-        "mutation_rate": FloatParam(0.0, 1.0, nsteps=10),
+    # ---- Simulation ---- #
+    # Repeatedly simulates the GA with a distinct configuration
+    samples = 1000
+    results = []
+
+    for i in range(1, samples + 1):
+        best_cost, _ = genetic_algorithm(
+            population_size=500,
+            elite_size=20,
+            tournament_size=4,
+            mutation_rate=0.50,
+            crossover_rate=0.50,
+            seed=i,
+        )
+        results.append(best_cost)
+
+    # ---- Plot 1 ---- #
+    # Distribution of simulation results
+    fig, axes = plt.subplots(
+        1, 2, figsize=(10, 5), gridspec_kw={"width_ratios": [1, 2]}
+    )
+    axes[0].boxplot(results)
+    axes[0].set_ylabel("Total distance")
+    axes[0].grid(False)
+
+    axes[1].hist(results, bins=20, edgecolor="black", color=["#377eb8"], alpha=0.75)
+    axes[1].set_xlabel("Total distance")
+    axes[1].set_ylabel("Frequency")
+    axes[1].grid()
+
+    plt.tight_layout(rect=(0, 0, 1, 0.96))
+    plt.savefig(records_dir / "ga_results_distribution.pdf")
+
+    # ---- Plot 2 ---- #
+    # Running mean of simulation results
+    plt.figure(figsize=(10, 5))
+
+    results_idx = np.arange(1, samples + 1)
+    plt.scatter(results_idx, results, label="Individual results", color="#377eb8", s=10)
+
+    means = np.cumsum(results) / results_idx
+    plt.plot(results_idx, means, label="Running mean", color="#e41a1c")
+
+    plt.xlabel("Number of runs")
+    plt.ylabel("Total distance")
+    plt.grid()
+    plt.legend()
+    plt.savefig(records_dir / "tsp_ga_running_mean.pdf")
+
+    # ---- Save Results as JSON ---- #
+    summary = {
+        "header": {
+            "description": "Results from repeated runs of the GA.",
+            "author": "Felix Wuermseher",
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "script": os.path.basename(__file__),
+        },
+        "sample_count": samples,
+        "run_seeds": list(range(1, samples + 1)),
+        "results": results,
     }
-
-    # Run the optimization with EvoBandits
-    seed = 42  # to reproduce
-    algorithm = EvoBandits()  # GMAB algorithm with default configuration
-    n_trials = 200  # number of simulations
-    n_best = 1  # display only best result
-
-    study = Study(seed, algorithm)
-    study.optimize(ga_objective, params, n_trials)
-
-    # Re-evaluate the solution to obtain a "true" result
-    # TODO
-
-    # Print the results
-    print(
-        "Best result found by the genetic algorithm:\n"
-        f"Configuration:\t{study.best_params}\n"
-        f"Best distance:\t{study.best_value}\n"
-        f"Mean distance:\t{study.mean_value}\n"
-    )
-
-    # Plot the known best tour
-    fig, ax = plt.subplots(1, 2, figsize=(16, 8))
-    ax[0].tourplot(BEST_TOUR)
-    ax[0].set_title(
-        "Near-optimal solution for the TSP\n"
-        f"Total cost: {_calc_total_distance(BEST_TOUR):.4f}"
-    )
-
-    # Obtain an example solution with the best config and plot to compare
-    cost, tour = genetic_algorithm(seed=42, **study.best_params)
-    ax[1].tourplot(tour)
-    ax[1].set_title(
-        "Example solution from best genetic algorithm configuration\n"
-        f"Total cost: {cost:.4f}"
-    )
-    plt.show()
+    with open(records_dir / "tsp_summary.json", "w") as f:
+        json.dump(summary, f, indent=2)
