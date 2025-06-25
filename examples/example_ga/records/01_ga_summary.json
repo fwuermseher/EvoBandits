@@ -1,8 +1,7 @@
 {
   "header": {
     "description": "Results from repeated runs of the GA.",
-    "date": "2025-06-23",
-    "script": "tsp_ga.py"
+    "date": "2025-06-23"
   },
   "sample_count": 1000,
   "results": [

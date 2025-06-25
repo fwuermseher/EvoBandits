@@ -1,9 +1,12 @@
 
+import os
+from pathlib import Path
+
 from numba import njit, prange
 import numpy as np
 from scipy.spatial.distance import cdist
-import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
+import matplotlib.pyplot as plt
 
 
 # Dataset and (near) optimal tour for a TSP instance with 91 cities.
@@ -131,7 +134,7 @@ N_CITIES = len(CITIES)
 DIST_MATRIX = cdist(CITIES, CITIES, metric="euclidean")
 
 
-# Genetic Algorithm and components.
+# Genetic Algorithm, components, and utility for plotting.
 @njit
 def _calc_total_distance(tour):
     """Calculate the the total distance of a tour for the TSP.
@@ -339,7 +342,7 @@ def genetic_algorithm(
     return best_cost, best_tour
 
 
-def tourplot(tour, cities=CITIES, ax=None, line_color="blue"):
+def _tourplot(tour, cities=CITIES, ax=None, line_color="blue"):
     """Plot a TSP tour on a 2D plane.
 
     Args:
@@ -370,96 +373,18 @@ def tourplot(tour, cities=CITIES, ax=None, line_color="blue"):
 
 
 def patch_plotlib_tourplot():
-    """Monkey-patch to extend pyplot and Axes with tourplot"""
-    plt.tourplot = lambda tour, **kwargs: tourplot(  # type: ignore
+    """Utility to extend pyplot and Axes with tourplot"""
+    plt.tourplot = lambda tour, **kwargs: _tourplot(  # type: ignore
         tour, **kwargs
     )
-    Axes.tourplot = lambda self, tour, **kwargs: tourplot(  # type: ignore
+    Axes.tourplot = lambda self, tour, **kwargs: _tourplot(  # type: ignore
         tour, ax=self, **kwargs
     )
 
 
-if __name__ == "__main__":
-    # ---- Setup ---- #
-    import os
-    import json
-    from pathlib import Path
-    from datetime import datetime
-    from tqdm import tqdm
-
+def get_records_dir():
+    """Utility to setup a directory for the analysis records."""
     script_dir = os.path.dirname(os.path.abspath(__file__))
     records_dir = Path(script_dir) / "records"
     os.makedirs(records_dir, exist_ok=True)
-
-    # ---- Simulation ---- #
-    # Repeatedly simulates the GA with a distinct configuration
-    samples = 1000
-    results = []
-    for i in tqdm(range(1, samples + 1), desc="Collecting GA samples:"):
-        best_cost, _ = genetic_algorithm(
-            population_size=500,
-            elite_size=20,
-            tournament_size=4,
-            mutation_rate=0.50,
-            crossover_rate=0.50,
-            seed=i,
-        )
-        results.append(best_cost)
-
-    # ---- Plot 1 ---- #
-    # Distribution of simulation results
-    fig, axes = plt.subplots(
-        1, 2, figsize=(10, 5), gridspec_kw={"width_ratios": [1, 2]}
-    )
-    axes[0].grid(False)
-    axes[0].boxplot(results)
-    axes[0].set_ylabel("Total distance")
-
-    axes[1].grid()
-    axes[1].hist(
-        results, 
-        bins=20, 
-        edgecolor="black", 
-        color=["#377eb8"], 
-        alpha=0.75
-    )
-    axes[1].set_xlabel("Total distance")
-    axes[1].set_ylabel("Frequency")
-
-    plt.tight_layout(rect=(0, 0, 1, 0.96))
-    plt.savefig(records_dir / "tsp_ga_results_dist.pdf")
-
-    # ---- Plot 2 ---- #
-    # Running mean of simulation results
-    plt.figure(figsize=(10, 5))
-    plt.grid()
-
-    results_idx = np.arange(1, samples + 1)
-    plt.scatter(
-        results_idx, 
-        results, 
-        label="Individual results", 
-        color="#377eb8", 
-        s=10
-    )
-
-    means = np.cumsum(results) / results_idx
-    plt.plot(results_idx, means, label="Running mean", color="#e41a1c")
-
-    plt.xlabel("Number of runs")
-    plt.ylabel("Total distance")
-    plt.legend()
-    plt.savefig(records_dir / "tsp_ga_running_means.pdf")
-
-    # ---- Save Results ---- #
-    summary = {
-        "header": {
-            "description": "Results from repeated runs of the GA.",
-            "date": datetime.now().strftime("%Y-%m-%d"),
-            "script": os.path.basename(__file__),
-        },
-        "sample_count": samples,
-        "results": results,
-    }
-    with open(records_dir / "tsp_summary.json", "w") as f:
-        json.dump(summary, f, indent=2)
+    return records_dir
