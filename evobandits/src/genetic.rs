@@ -147,12 +147,20 @@ impl GeneticAlgorithm {
 
             for (i, value) in new_action_vector.iter_mut().enumerate() {
                 if rng.random::<f64>() < self.mutation_rate {
-                    let adjustment = Normal::new(
+                    let mut adjustment = Normal::new(
                         0.0,
                         self.mutation_span * (self.upper_bound[i] - self.lower_bound[i]) as f64,
                     )
                     .unwrap()
                     .sample(&mut rng);
+
+                    if adjustment.abs() < 1.0 {
+                        adjustment = if adjustment.is_sign_negative() {
+                            -1.0
+                        } else {
+                            1.0
+                        };
+                    }
 
                     *value = (*value as f64 + adjustment)
                         .max(self.lower_bound[i] as f64)
