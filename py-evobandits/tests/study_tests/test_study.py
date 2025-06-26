@@ -16,15 +16,15 @@ from contextlib import nullcontext
 from unittest.mock import create_autospec
 
 import pytest
-from evobandits import ALGORITHM_DEFAULT, EvoBandits, Study
+from evobandits import ALGORITHM_DEFAULT, GMAB, Study
 
 from tests._functions import clustering as cl
 from tests._functions import rosenbrock as rb
 
 
 def test_algorithm_default():
-    # the default algorithm should always be a new Evobandits instance without modifications
-    assert ALGORITHM_DEFAULT == EvoBandits()
+    # the default algorithm should always be a new GMAB instance without modifications
+    assert ALGORITHM_DEFAULT == GMAB()
 
 
 @pytest.mark.parametrize(
@@ -51,8 +51,6 @@ def test_study_init(seed, kwargs, exp_algorithm, caplog):
 
         assert study.seed == seed
         assert study.algorithm == exp_algorithm
-        assert study.objective is None
-        assert study.params is None
 
         if log:
             level, msg = log
@@ -99,6 +97,9 @@ def test_study_init(seed, kwargs, exp_algorithm, caplog):
                 ],
             },
         ],
+        [rb.function, ["number"], 1, {"exp": pytest.raises(TypeError)}],
+        [rb.function, {1: "number"}, 1, {"exp": pytest.raises(TypeError)}],
+        [rb.function, {"number": "BaseParam"}, 1, {"exp": pytest.raises(TypeError)}],
         [rb.function, rb.PARAMS, 1, {"maximize": "False", "exp": pytest.raises(TypeError)}],
         [rb.function, rb.PARAMS, 1, {"n_runs": "2", "exp": pytest.raises(TypeError)}],
         [rb.function, rb.PARAMS, 1, {"n_runs": 0, "exp": pytest.raises(ValueError)}],
@@ -108,6 +109,9 @@ def test_study_init(seed, kwargs, exp_algorithm, caplog):
         "valid_clustering_testcase",
         "default_with_maximize",
         "default_with_n_runs",
+        "invalid_params_not_a_mapping",
+        "invalid_params_not_a_str_key",
+        "invalid_params_not_a_BaseParam_value",
         "invalid_maximize_type",
         "invalid_n_runs_type",
         "invalid_n_runs_value",
@@ -115,8 +119,7 @@ def test_study_init(seed, kwargs, exp_algorithm, caplog):
 )
 def test_optimize(objective, params, n_trials, kwargs):
     # Mock dependencies
-    # Per default, and expected results from the rosenbrock testcase are used to mock EvoBandits.
-    mock_algorithm = create_autospec(EvoBandits, instance=True)
+    mock_algorithm = create_autospec(GMAB, instance=True)
     mock_algorithm.optimize.return_value = kwargs.pop("optimize_ret", rb.ARM_BEST)
     mock_algorithm.clone.return_value = mock_algorithm
     exp_result = kwargs.pop("exp_result", rb.TRIAL_BEST)
@@ -164,7 +167,7 @@ def test_optimize(objective, params, n_trials, kwargs):
 )
 def test_study_properties(direction, best_solution, best_params, best_value, mean_value):
     # Mock dependencies
-    mock_algorithm = create_autospec(EvoBandits, instance=True)
+    mock_algorithm = create_autospec(GMAB, instance=True)
     study = Study(seed=42, algorithm=mock_algorithm)  # seeding to avoid warning log
     study._direction = direction
     study.results = [

@@ -17,9 +17,7 @@ from statistics import mean
 from typing import Any, TypeAlias
 
 from evobandits import logging
-from evobandits.evobandits import (
-    EvoBandits,
-)
+from evobandits.evobandits import GMAB
 from evobandits.params import BaseParam
 
 _logger = logging.get_logger(__name__)
@@ -28,7 +26,7 @@ _logger = logging.get_logger(__name__)
 ParamsType: TypeAlias = Mapping[str, BaseParam]
 
 
-ALGORITHM_DEFAULT = EvoBandits()
+ALGORITHM_DEFAULT = GMAB()
 
 
 class Study:
@@ -39,13 +37,13 @@ class Study:
     and to manage user-defined attributes related to the study.
     """
 
-    def __init__(self, seed: int | None = None, algorithm=ALGORITHM_DEFAULT) -> None:
+    def __init__(self, seed: int | None = None, algorithm: GMAB = ALGORITHM_DEFAULT) -> None:
         """
-        Initialize a Study instance.
+        Initializes a Study instance.
 
         Args:
-            seed: The seed for the Study. Defaults to None (use system entropy).
-            algorithm: The optimization algorithm to use. Defaults to EvoBandits.
+            seed: The seed for the Study. Defaults to None (uses system entropy).
+            algorithm: The optimization algorithm to use. Defaults to GMAB.
         """
         if seed is None:
             _logger.warning("No seed provided. Results will not be reproducible.")
@@ -53,55 +51,55 @@ class Study:
             raise TypeError(f"Seed must be integer: {seed}")
 
         self.seed: int | None = seed
-        self.algorithm = algorithm  # ToDo Issue #23: type and input validation
-        self.objective: Callable | None = None  # ToDo Issue #23: type and input validation
-        self.params: ParamsType | None = None  # ToDo Issue #23: Input validation
+        self.algorithm: GMAB = algorithm
         self.results: list[dict[str, Any]] = []
 
         # 1 for minimization, -1 for maximization to avoid repeated branching during optimization.
         self._direction: int = 1
+        self._params: ParamsType
+        self._objective: Callable
 
     def _collect_bounds(self) -> list[tuple[int, int]]:
         """
-        Collects the bounds of all parameters in the study.
+        Collects the bounds of the parameter configuration saved to `self._params`.
 
         Returns:
-            list[tuple[int, int]]: A list of tuples representing the bounds for each parameter.
+            The bounds, a list of (lower_bound, upper_bound) tuples for all parameters.
         """
         bounds = []
-        for param in self.params.values():
+        for param in self._params.values():
             bounds.extend(param.bounds)
         return bounds
 
-    def _decode(self, action_vector: list) -> dict:
+    def _decode(self, action_vector: list[int]) -> dict[str, Any]:
         """
-        Decodes an action vector to a dictionary that contains the solution for each parameter.
+        Decodes an action vector into a dictionary mapping parameter names to their decoded values.
 
         Args:
-            action_vector (list): A list of actions to map.
+            action_vector: The encoded representation of parameter values.
 
         Returns:
-            dict: The distinct solution for the action vector, formatted as dictionary.
+            A dictionary of parameter names and their decoded values.
         """
         result = {}
         idx = 0
-        for key, param in self.params.items():
+        for key, param in self._params.items():
             result[key] = param.decode(action_vector[idx : idx + param.size])
             idx += param.size
         return result
 
-    def _evaluate(self, action_vector: list) -> float:
+    def _evaluate(self, action_vector: list[int]) -> float:
         """
         Execute a trial with the given action vector.
 
         Args:
-            action_vector (list): A list of actions to execute.
+            action_vector: The encoded representation of parameter values.
 
         Returns:
-            float: The result of the objective function.
+            The value from a single evaluation of the objective function.
         """
         solution = self._decode(action_vector)
-        evaluation = self._direction * self.objective(**solution)
+        evaluation = self._direction * self._objective(**solution)
         return evaluation
 
     def optimize(
@@ -120,12 +118,12 @@ class Study:
         specified bounds and running the objective function for a given number of trials.
 
         Args:
-            objective (Callable): The objective function to optimize.
-            params (dict): A dictionary of parameters with their bounds.
-            n_trials (int): The number of evaluations to perform on the objective.
-            maximize (bool): Indicates if objective is maximized. Default is False.
-            n_best (int): The number of results to return per run. Default is 1.
-            n_runs (int): The number of times optimization is repeated. Default is 1.
+            objective: The objective function to optimize.
+            params: A dictionary of parameters with their bounds.
+            n_trials: The number of evaluations to perform on the objective.
+            maximize: Indicates if objective is maximized. Default is False.
+            n_best: The number of results to return per run. Default is 1.
+            n_runs: The number of times optimization is repeated. Default is 1.
         """
         if not isinstance(maximize, bool):
             raise TypeError(f"maximize must be a bool, got {type(maximize)}.")
@@ -136,8 +134,18 @@ class Study:
         if n_runs < 1:
             raise ValueError(f"n_runs must be an int larger than 0, got {n_runs}.")
 
-        self.objective = objective
-        self.params = params
+        if not isinstance(params, Mapping):
+            raise TypeError(f"params must be a mapping, got {type(params)}.")
+        for k, v in params.items():
+            if not isinstance(k, str):
+                raise TypeError(f"Parameter key must be str, got {type(k)}.")
+            if not isinstance(v, BaseParam):
+                raise TypeError(f"Parameter '{k}' must implement BaseParam, got {type(v)}.")
+        self._params = params
+
+        # input validation for objective, n_trials, n_best is managed by 'self.algorithm'
+        self._objective = objective
+
         bounds = self._collect_bounds()
 
         for run_id in range(n_runs):
@@ -159,7 +167,7 @@ class Study:
         Returns the best value found during optimization.
 
         Returns:
-            float: The best value among `study.results`.
+            The best value among `study.results`.
         """
         if not self.results:
             raise AttributeError("Study has no results. Run study.optimize() first.")
@@ -171,7 +179,7 @@ class Study:
         Returns the mean value of all results found during optimization.
 
         Returns:
-            float: The mean value of `study.results`.
+            The mean value of `study.results`.
         """
         if not self.results:
             raise AttributeError("Study has no results. Run study.optimize() first.")
@@ -183,18 +191,18 @@ class Study:
         Returns the best solution found during optimization.
 
         Returns:
-            dict[str, Any]: The solution (as a dictionary) that yielded `study.best_value`.
+            The solution (as a dictionary) that yielded `study.best_value`.
         """
         if not self.results:
             raise AttributeError("Study has no results. Run study.optimize() first.")
         return next(r for r in self.results if r["value"] == self.best_value)
 
     @property
-    def best_params(self) -> ParamsType:
+    def best_params(self) -> dict[str, Any]:
         """
         Returns the parameter set corresponding to the best value found during optimization.
 
         Returns:
-            ParamsType: The parameters (as a dictionary) that yielded `study.best_value`.
+            The parameters (as a dictionary) that yielded `study.best_value`.
         """
         return self.best_solution["params"]
