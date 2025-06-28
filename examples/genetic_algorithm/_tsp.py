@@ -1,0 +1,182 @@
+from matplotlib.axes import Axes
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.spatial.distance import cdist
+
+
+# ---- Traveling Salesman Problem (TSP) ---- #
+# The data below has been generated using the online TSP solver from
+# http://kay-schoenberger.de/math/tsp/ (last accessed: 23.06.2025).
+
+# Raw data for the TSP (index, x, y for 100 cities)
+_DATASET = """
+1 0.518455 0.117666
+2 0.412207 0.270425
+3 0.170908 0.439297
+4 0.231738 0.691106
+5 0.973062 0.542285
+6 0.680053 0.629754
+7 0.0574759 0.41741
+8 0.95278 0.00639458
+9 0.912311 0.237353
+10 0.471636 0.548086
+11 0.636888 0.180885
+12 0.842002 0.103187
+13 0.769105 0.228952
+14 0.0918957 0.725068
+15 0.501922 0.703234
+16 0.236002 0.554608
+17 0.107101 0.00841708
+18 0.611168 0.537592
+19 0.953258 0.675642
+20 0.873946 0.663728
+21 0.70245 0.702941
+22 0.121438 0.829001
+23 0.657696 0.839029
+24 0.198826 0.295627
+25 0.308638 0.455626
+26 0.208338 0.320776
+27 0.951956 0.163992
+28 0.504613 0.449296
+29 0.160403 0.0744223
+30 0.719033 0.375464
+31 0.788955 0.910558
+32 0.941424 0.676232
+33 0.234415 0.199962
+34 0.398604 0.710935
+35 0.501881 0.986
+36 0.457209 0.566719
+37 0.297194 0.388069
+38 0.6099 0.620662
+39 0.0735996 0.30104
+40 0.435896 0.993704
+41 0.865403 0.342708
+42 0.148014 0.160342
+43 0.507256 0.462418
+44 0.213183 0.0552166
+45 0.862983 0.685326
+46 0.315052 0.0113708
+47 0.405323 0.373744
+48 0.239506 0.453989
+49 0.937962 0.0051561
+50 0.229911 0.21609
+51 0.662844 0.524408
+52 0.918233 0.309528
+53 0.997219 0.104711
+54 0.696788 0.34447
+55 0.724836 0.809259
+56 0.111462 0.852068
+57 0.334219 0.903375
+58 0.856072 0.519294
+59 0.498849 0.122285
+60 0.212074 0.204556
+61 0.212573 0.100178
+62 0.837126 0.424684
+63 0.664077 0.529381
+64 0.682101 0.267828
+65 0.618452 0.788802
+66 0.680971 0.0305665
+67 0.177247 0.256753
+68 0.0882267 0.259966
+69 0.678691 0.632159
+70 0.596151 0.00271573
+71 0.619989 0.617247
+72 0.52151 0.792948
+73 0.665997 0.893607
+74 0.568872 0.000938351
+75 0.501969 0.961242
+76 0.393459 0.956019
+77 0.575203 0.236767
+78 0.363141 0.122829
+79 0.231977 0.421324
+80 0.456084 0.410431
+81 0.908268 0.267458
+82 0.729077 0.0685629
+83 0.0941881 0.740453
+84 0.905636 0.517292
+85 0.738818 0.730285
+86 0.627504 0.245244
+87 0.821099 0.752222
+88 0.113247 0.938652
+89 0.75029 0.411209
+90 0.393964 0.363955
+91 0.867268 0.159921
+92 0.332424 0.0582949
+93 0.361999 0.229421
+94 0.185137 0.687476
+95 0.380547 0.0598576
+96 0.0398405 0.928948
+97 0.737964 0.337435
+98 0.201291 0.41374
+99 0.645027 0.885309
+100 0.658961 0.297275
+"""
+
+# (Near) optimal solution obtained using the online solver
+OPT_TOUR = [
+    71, 64, 22, 54, 84, 20, 68,  5, 70, 37, 17, 62, 50, 88, 29, 96, 53,
+    99, 63, 85, 76, 10,  0, 58, 73, 69, 65, 81, 12, 90, 11, 48,  7, 52,
+    26,  8, 80, 51, 40, 61, 57, 83,  4, 18, 31, 19, 44, 86, 30, 72, 98,
+    74, 34, 39, 75, 56, 87, 95, 55, 21, 82, 13, 93,  3, 15, 47, 24, 36,
+    78, 97,  2,  6, 38, 67, 66, 23, 25, 49, 32, 59, 41, 16, 28, 60, 43,
+    45, 91, 94, 77, 92,  1, 89, 46, 79, 27, 42,  9, 35, 33, 14
+]
+
+# Optimal cost, i.e. total distance of the optimal tour
+OPT_COST = 7.28473
+
+
+# Extract (x, y) coordinates for each city from the dataset
+def _extract_cities(dataset):
+    cities = [
+        [float(parts[1]), float(parts[2])]
+        for line in _DATASET.strip().splitlines()
+        if (parts := line.split())
+    ]
+    return np.array(cities)
+
+
+CITIES = _extract_cities(_DATASET)
+N_CITIES = len(CITIES)
+
+# Compute a symmetric, Euclidean distance matrix for the cities
+DIST_MATRIX = cdist(CITIES, CITIES, metric="euclidean")
+
+
+def _tourplt(tour, cities=CITIES, ax=None, line_color="black"):
+    """Plot a tour for the TSP instance on a 2D plane."""
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(8, 8))
+
+    # Plot the tour path
+    ordered_points = cities[tour]
+    tour_points = np.vstack([ordered_points, ordered_points[0]])
+    ax.plot(tour_points[:, 0], tour_points[:, 1], "-", color=line_color)
+
+    # Scatter the cities
+    ax.scatter(cities[:, 0], cities[:, 1], c="black")
+
+    ax.set_xlabel("X")
+    ax.set_ylabel("Y")
+    ax.grid(True)
+    ax.axis("equal")
+    return ax
+
+
+def extend_plotlib_tourplt():
+    """Extend pyplot with a function to plot a tour."""
+    plt.tourplt = lambda tour, **kwargs: _tourplt(  # type: ignore
+        tour, **kwargs
+    )
+    Axes.tourplt = lambda self, tour, **kwargs: _tourplt(  # type: ignore
+        tour, ax=self, **kwargs
+    )
+
+
+if __name__ == "__main__":
+    # Plot the optimal tour
+    # TODO: Finalize linecolor, caption and save figure
+    extend_plotlib_tourplt()
+    plt.tourplt(OPT_TOUR, line_color="grey")  # type: ignore
+    plt.title(f"Optimal tour\nTotal cost: {OPT_COST:.4f}")
+    plt.show()
