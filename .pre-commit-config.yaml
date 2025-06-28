@@ -7,25 +7,25 @@ repos:
       - id: check-yaml
       - id: end-of-file-fixer
       - id: trailing-whitespace
-  - repo: https://github.com/google/addlicense
-    rev: "499ed7f28389eb4a08c2d7e40b1637cfd7f65381"
-    hooks:
-      - id: addlicense
-        args:
-          [
-            "-c",
-            "EvoBandits",
-            "-ignore",
-            "yaml",
-            "-ignore",
-            "md",
-            "-ignore",
-            "toml",
-            "-ignore",
-            "yml",
-            "-ignore",
-            ".pre-commit-config.yaml",
-          ]
+  # - repo: https://github.com/google/addlicense
+  #   rev: "499ed7f28389eb4a08c2d7e40b1637cfd7f65381"
+  #   hooks:
+  #     - id: addlicense
+  #       args:
+  #         [
+  #           "-c",
+  #           "EvoBandits",
+  #           "-ignore",
+  #           "yaml",
+  #           "-ignore",
+  #           "md",
+  #           "-ignore",
+  #           "toml",
+  #           "-ignore",
+  #           "yml",
+  #           "-ignore",
+  #           ".pre-commit-config.yaml",
+  #         ]
   - repo: local
     hooks:
       - id: cargo-fmt
