@@ -15,7 +15,7 @@ def _setup_output_dir(name):
     return output_dir
 
 
-RESULTS_DIR = _setup_output_dir("output")
+RESULTS_DIR = _setup_output_dir("results")
 PLOTS_DIR = _setup_output_dir("plots")
 
 
@@ -49,7 +49,7 @@ Axes.tourplot = lambda self, tour, cities: _tourplot(  # type: ignore
 )
 
 # pyplot styling
-_plt.style.use("seaborn-v0_8-whitegrid")
+_plt.style.use("petroff10")
 _mpl.rcParams["font.family"] = "serif"
 _mpl.rcParams["font.serif"] = [
     "Computer Modern Roman",
