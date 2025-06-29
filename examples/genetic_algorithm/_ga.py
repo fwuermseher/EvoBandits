@@ -114,7 +114,7 @@ def genetic_algorithm(
     tournament_split,
     crossover_rate,
     mutation_rate,
-    generations=300,
+    generations,
     seed=-1,
 ):
     """Genetic algorithm to solve a TSP instance with 100 cities."""
@@ -147,3 +147,14 @@ def genetic_algorithm(
     best_tour = pop[0]
     best_cost = _tour_distance(best_tour)
     return best_cost, best_tour
+
+
+# --- Solution Space for optimization ---- #
+# TODO: Consider shrinking elite_split to 30 %
+# TODO: Consider tournament split up to 20% (costly)
+POP_SIZE_OPT = [int(50 + i * 10) for i in range(21)]
+ELITE_SPLIT_OPT = [i * 0.01 for i in range(101)]
+TOURNAMENT_SPLIT_OPT = [i * 0.01 for i in range(11)]
+CROSSOVER_RATE_OPT = [i * 0.01 for i in range(101)]
+MUTATION_RATE_OPT = [i * 0.01 for i in range(101)]
+GENERATIONS = 300

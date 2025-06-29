@@ -1,5 +1,3 @@
-from matplotlib.axes import Axes
-import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial.distance import cdist
 
@@ -141,4 +139,3 @@ N_CITIES = len(CITIES)
 
 # Compute a symmetric, Euclidean distance matrix for the cities
 DIST_MATRIX = cdist(CITIES, CITIES, metric="euclidean")
-

@@ -1,13 +1,9 @@
-import json
 import numpy as np
 
-from _util import plt, RESULTS_DIR, PLOTS_DIR
-
-
-with open(RESULTS_DIR / "01_ga_repeats.json", "r") as f:
-    results = json.load(f)
+from _util import plt, json_load
 
 # ---- Distribution of Results ---- #
+results = json_load("01_ga_repeats.json")
 gspec = {"width_ratios": [1, 2]}
 fig, axes = plt.subplots(1, 2, figsize=(10, 5), gridspec_kw=gspec)
 
@@ -21,7 +17,7 @@ axes[1].set_xlabel("Total distance")
 axes[1].set_ylabel("Frequency")
 
 plt.tight_layout(rect=(0, 0, 1, 0.96))
-plt.savefig(PLOTS_DIR / "01_ga_results.pdf")
+plt.savefig("01_ga_results.pdf")
 
 # ---- Running mean of Results ---- #
 plt.figure(figsize=(10, 5))
@@ -36,4 +32,4 @@ plt.plot(idx, means, label="Running mean", color="#dd8452")
 plt.xlabel("Number of runs")
 plt.ylabel("Total distance")
 plt.legend()
-plt.savefig(PLOTS_DIR / "01_ga_running_mean.pdf")
+plt.savefig("01_ga_running_mean.pdf")

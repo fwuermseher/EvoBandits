@@ -1,4 +1,5 @@
 import os
+import json
 from pathlib import Path
 from matplotlib.axes import Axes
 import matplotlib as _mpl
@@ -7,7 +8,7 @@ import numpy as np
 
 
 # ---- File output utility ---- #
-def _setup_output_dir(name):
+def _get_output_dir(name):
     """Utility to setup a directory for file outputs."""
     script_dir = os.path.dirname(os.path.abspath(__file__))
     output_dir = Path(script_dir) / name
@@ -15,11 +16,27 @@ def _setup_output_dir(name):
     return output_dir
 
 
-RESULTS_DIR = _setup_output_dir("results")
-PLOTS_DIR = _setup_output_dir("plots")
+def json_dump(results, filename):
+    """Save results to local directory"""
+    folder = _get_output_dir("results")
+    with open(folder / filename, "w") as f:
+        json.dump(results, f, indent=2)
+
+
+def json_load(filename):
+    """Open a file from the local results directory"""
+    folder = _get_output_dir("results")
+    with open(folder / filename, "r") as f:
+        return json.load(f)
 
 
 # ---- plotlib utility ---- #
+def _savefig(self, filename):
+    """Save the current figure to the results directory."""
+    plots_folder = _get_output_dir("plots")
+    self.savefig(plots_folder / filename)
+
+
 def _tourplot(tour, cities, ax=None):
     """Plot a tour for the TSP instance on a 2D plane."""
     if ax is None:
@@ -40,7 +57,8 @@ def _tourplot(tour, cities, ax=None):
     return ax
 
 
-# Patch pyplot and Axes with `tourplot`
+# Patch pyplot and Axes with `tourplot` and custom `savefig`
+_plt.savefig = lambda self, filename: _savefig(self, filename)
 _plt.tourplot = lambda tour, cities: _tourplot(  # type: ignore
     tour, cities
 )
