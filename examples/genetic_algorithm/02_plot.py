@@ -1,9 +1,11 @@
 import numpy as np
 
 from _util import json_load, plt
+from _tsp import OPT_COST
 
 # ---- Lineplot: Results by Configuration and Generations ---- #
 # TODO: Compare CIs vs. Stds, check if boxplots are better
+# TODO: Consistent AXHLINE for OPT_COST in all plots (C2, label)
 results = json_load("02_ga_generations.json")
 plt.figure(figsize=(10, 6))
 
@@ -16,11 +18,9 @@ for name, config in configurations.items():
     means = [np.mean(gen_results[f"{gen}"]) for gen in generation_opt]
     stds = [np.std(gen_results[f"{gen}"]) for gen in generation_opt]
 
-    # cis = [1.96 * (np.std(gen_results[f"{gen}"]) / np.sqrt(len(gen_results[f"{gen}"]))) for gen in generation_opt]
-
     if name == "Best":
         # Highlight this one
-        line = plt.errorbar(
+        plt.errorbar(
             generation_opt,
             means,
             yerr=stds,
@@ -32,7 +32,7 @@ for name, config in configurations.items():
         )
     else:
         # Gray lines with legend
-        (line,) = plt.plot(
+        plt.plot(
             generation_opt,
             means,
             label=name,
@@ -41,8 +41,8 @@ for name, config in configurations.items():
             alpha=0.6,
             linestyle="--",
         )
-    lines.append(line)
 
+plt.axhline(y=OPT_COST, color="C2")
 plt.xlabel("Number of Generations")
 plt.ylabel("Best Cost")
 plt.grid(True)

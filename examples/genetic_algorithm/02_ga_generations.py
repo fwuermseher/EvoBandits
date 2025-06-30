@@ -12,11 +12,12 @@ from _ga import (
 from _util import json_dump
 
 # Define a best configuration and add sample configurations
-# TODO: Add header
 # TODO: Use the elite configuration from evobandits optimization
-# TODO: Use number of evaluations from evobandits as sample cnt!
+# TODO: Use number of evaluations from evobandits as sample cnt?
 N_CONFIGS = 10
 N_SAMPLES = 20
+SEED = 42
+rng = np.random.default_rng(SEED)
 
 
 def random_config(seed: int):
@@ -42,11 +43,13 @@ configurations = dict(
     }
 )
 for i in range(1, N_CONFIGS):
-    configurations.update({f"Random_{i}": random_config(i)})
+    seed = rng.integers(0, 2**32 - 1, dtype=int)
+    configurations.update({f"Random_{i}": random_config(seed)})
 
 
 # Simulate the GA for each configuration and different no. of generations
-generation_opt = list(range(100, 1001, 100))
+# TODO: Only up to 600 generations needed, starting at 200 seems enough
+generation_opt = list(range(300, 400, 10))
 
 results = {
     "configurations": configurations,
@@ -58,7 +61,8 @@ for name, config in configurations.items():
 
     for gen in generation_opt:
         gen_results = []
-        for seed in tqdm(range(N_SAMPLES), desc=f"{name} | Gen {gen}"):
+        for _ in tqdm(range(N_SAMPLES), desc=f"{name} | Gen {gen}"):
+            seed = rng.integers(0, 2**32 - 1, dtype=int)
             cost, _ = genetic_algorithm(
                 generations=gen,
                 pop_size=250,
