@@ -119,7 +119,7 @@ def genetic_algorithm(
 ):
     """Genetic algorithm to solve a TSP instance with 100 cities."""
     # Optional seeding to reproduce results.
-    if seed != 1:
+    if seed != -1:
         np.random.seed(seed)
 
     pop = _initialize_population(pop_size)

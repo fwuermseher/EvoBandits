@@ -31,16 +31,17 @@ def json_load(filename):
 
 
 # ---- plotlib utility ---- #
-def _savefig(self, filename):
+def _savefig(filename):
     """Save the current figure to the results directory."""
+    fig = _plt.gcf()
     plots_folder = _get_output_dir("plots")
-    self.savefig(plots_folder / filename)
+    fig.savefig(plots_folder / filename)
 
 
 def _tourplot(tour, cities, ax=None):
     """Plot a tour for the TSP instance on a 2D plane."""
     if ax is None:
-        _, ax = plt.subplots(figsize=(8, 8))
+        _, ax = _plt.subplots(figsize=(8, 8))
 
     # Plot the tour path
     tour_pts = cities[tour]
@@ -58,7 +59,7 @@ def _tourplot(tour, cities, ax=None):
 
 
 # Patch pyplot and Axes with `tourplot` and custom `savefig`
-_plt.savefig = lambda self, filename: _savefig(self, filename)
+_plt.savefig = _savefig
 _plt.tourplot = lambda tour, cities: _tourplot(  # type: ignore
     tour, cities
 )
